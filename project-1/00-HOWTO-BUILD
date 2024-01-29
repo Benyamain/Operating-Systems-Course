@@ -1,0 +1,48 @@
+# To build/run the xecho program, run:
+
+    # Compile given.c into object code given.o
+    gcc -Wall -c given.c
+
+    # Compile xecho.c into object code xecho.o
+    gcc -Wall -c xecho.c
+
+    # Link object files into executable program xecho
+    gcc -Wall xecho.o given.o -o xecho
+
+    # Run the program:
+    ./xecho abc   y
+
+# To build/run a test program for baseconv:
+
+    # Compile functions.c into object code functions.o
+    gcc -Wall -c functions.c
+
+    # Compile test.c into object code test.o
+    gcc -Wall -c test.c
+
+    # If using given.c, compile it into object code given.o
+    gcc -Wall -c given.c
+
+    # Link object files into executable program test
+    gcc -Wall o functions.o test.o -o test
+
+    # Run the test program:
+    ./test
+
+# To build/run the baseconv program:
+
+    # Compile functions.c into object code functions.o
+    gcc -Wall -c functions.c
+
+    # Compile baseconv.c into object code baseconv.o
+    gcc -Wall -c baseconv.c
+
+    # If using given.c, compile it into object code given.o
+    gcc -Wall -c given.c
+
+    # Link object files into executable program test
+    gcc -Wall o functions.o baseconv.o -o baseconv
+
+    # Run the baseconv program:
+    ./baseconv 16 10 0xffcc5511
+
