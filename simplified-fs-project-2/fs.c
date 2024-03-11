@@ -41,7 +41,7 @@ create_fs()
 	{
 		/* Not allocated */
 		inodes[i].size = -1;
-		strcpy(inodes[i].name, "");
+		strcpy(inodes[i].name, "Empty!!");
 	}
 
 	dbs = malloc(sizeof(struct disk_block) * sb.num_blocks);
@@ -53,11 +53,29 @@ create_fs()
 	}
 }
 
-/* Load the filesystem */
+/* Load (read) data from the filesystem */
 void
 mount_fs()
 {
+	FILE *file;
+	file = fopen("fs_data", "r");
 
+	/* Superblock */
+	fread(&sb, sizeof(struct superblock), 1, file);
+
+	/* Inodes */
+	for (int i = 0; i < sb.num_inodes; i++)
+	{
+		fread(&(inodes[i]), sizeof(struct inode), 1, file);
+	}
+
+	/* Disk blocks */
+	for (int i = 0; i < sb.num_blocks; i++)
+	{
+		fread(&(dbs[i]), sizeof(struct disk_block), 1, file);
+	}
+
+	fclose(file);
 }
 
 /* Write to the filesystem */

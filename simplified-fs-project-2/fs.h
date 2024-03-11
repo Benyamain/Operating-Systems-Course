@@ -27,3 +27,6 @@ void mount_fs();
 
 /* Write to the filesystem */
 void sync_fs();
+
+/* Debugging and printing */
+void print_fs();
