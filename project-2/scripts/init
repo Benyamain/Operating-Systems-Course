@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Adding the compile script to /usr/bin so it can be accessible globally
+
+home_dir=~;
+
+sudo ln -s ~/OS-Assignment-2/scripts/compile /usr/bin/compile
+
+

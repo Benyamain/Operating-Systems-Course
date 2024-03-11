@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Usage: compile test.c
+
+home_dir=~;
+assignment_dir="$home_dir/OS-Assignment-2/user-libc-linux-4490"
+
+echo "Assignment directory: $assignment_dir";
+
+if [ -z "$1" ]; then
+	echo "You need to put in a file you want to compile";
+	exit 0
+fi
+
+# Compiles the source files into object files
+gcc -Wall -c syscall-riscv64.S -o $assignment_dir/build/syscall-riscv64.o
+gcc -Wall -c posix-calls.c -o $assignment_dir/build/posix-calls.o
+gcc -Wall -c crt-callmain-riscv64.S -o $assignment_dir/build/crt-callmain-riscv64.o
+gcc -Wall -c Llibc.c -o $assignment_dir/build/Llibc.o
+
+# Putting the files in a static library file
+ar rcs $assignment_dir/build/lib4490.a \
+            $assignment_dir/build/syscall-riscv64.o \
+            $assignment_dir/build/posix-calls.o \
+            $assignment_dir/build/crt-callmain-riscv64.o \
+            $assignment_dir/build/Llibc.o
+
+# If we want to use the functions in Llibc.h, we can add the
+#  #include "Llibc.h"
+
+#Compiling the file we want to compile
+gcc -Wall -c $1 -o $assignment_dir/build/output.o
+
+ld -T $assignment_dir/Llinker.ld -static -nostdlib $assignment_dir/build/output.o -L $assignment_dir/build -l4490 -o run
