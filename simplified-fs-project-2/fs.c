@@ -70,7 +70,7 @@ mount_fs()
 
 	/* Another more efficient way to achieve the same functionality as code logic to sync */
 	fread(inodes, sizeof(struct inode), sb.num_inodes, file);
-	fread(dbs[i], sizeof(struct disk_block), sb.num_blocks, file);
+	fread(dbs, sizeof(struct disk_block), sb.num_blocks, file);
 
 	fclose(file);
 }
@@ -117,6 +117,6 @@ print_fs()
 
 	for (int i = 0; i < sb.num_blocks; i++)
 	{
-		printf("\tBlock Number: %d, dbs[i].num_blocks: %d, dbs[i].next_block_num: %s\n", i, dbs[i].num_blocks, dbs[i].next_block_num);
+		printf("\tBlock Number: %d, dbs[i].next_block_num: %s\n", i, dbs[i].next_block_num);
 	}
 }

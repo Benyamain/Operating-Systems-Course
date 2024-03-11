@@ -17,7 +17,7 @@ struct disk_block
 {
 	int next_block_num;
 	/* Bytes */
-	char data[512]
+	char data[512];
 };
 
 /* Initialize the new filesystem */
