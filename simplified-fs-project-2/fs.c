@@ -117,6 +117,6 @@ print_fs()
 
 	for (int i = 0; i < sb.num_blocks; i++)
 	{
-		printf("\tBlock Number: %d, dbs[i].next_block_num: %s\n", i, dbs[i].next_block_num);
+		printf("\tBlock Number: %d, dbs[i].next_block_num: %d\n", i, dbs[i].next_block_num);
 	}
 }

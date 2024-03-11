@@ -4,10 +4,15 @@
 void
 main()
 {
+	/* create_fs(); */
+	/* sync_fs(); */
+
 	create_fs();
 	sync_fs();
 
 	/* Test by writing to the filesystem with methods above, then commenting them out and test reading from it */
+
+	/* mount_fs(); */
 	/* mount_fs(); */
 
 	/* Runs independently and should never be commented out when testing */
