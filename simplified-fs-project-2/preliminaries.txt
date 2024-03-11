@@ -9,10 +9,11 @@ Filesystem Structure
 	* Write
 	* Read
 
-* Datablock
+* Block
 	* Write
 	* Read
 
-* File
-	* Write
-	* Read
+* Sequential Memory Storage
+	* Superblock Data
+	* Inode Data
+	* Block Data

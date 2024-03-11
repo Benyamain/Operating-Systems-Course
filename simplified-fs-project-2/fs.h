@@ -9,6 +9,7 @@ struct superblock
 struct inode
 {
 	int size;
+	int first_block;
 	char name[8];
 };
 

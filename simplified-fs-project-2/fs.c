@@ -14,6 +14,7 @@ struct superblock
 struct inode
 {
 	int size;
+	int first_block;
 	char name[8];
 };
 
@@ -41,6 +42,7 @@ create_fs()
 	{
 		/* Not allocated */
 		inodes[i].size = -1;
+		inodes[i].first_block = -1;
 		strcpy(inodes[i].name, "Empty!!");
 	}
 
@@ -63,17 +65,12 @@ mount_fs()
 	/* Superblock */
 	fread(&sb, sizeof(struct superblock), 1, file);
 
-	/* Inodes */
-	for (int i = 0; i < sb.num_inodes; i++)
-	{
-		fread(&(inodes[i]), sizeof(struct inode), 1, file);
-	}
+	inodes = malloc(sizeof(struct inode) * sb.num_inodes);
+	dbs = malloc(sizeof(struct disk_block) * sb.num_blocks);
 
-	/* Disk blocks */
-	for (int i = 0; i < sb.num_blocks; i++)
-	{
-		fread(&(dbs[i]), sizeof(struct disk_block), 1, file);
-	}
+	/* Another more efficient way to achieve the same functionality as code logic to sync */
+	fread(inodes, sizeof(struct inode), sb.num_inodes, file);
+	fread(dbs[i], sizeof(struct disk_block), sb.num_blocks, file);
 
 	fclose(file);
 }
@@ -115,7 +112,7 @@ print_fs()
 	/* Inode printing */
 	for (int i = 0; i < sb.num_inodes; i++)
 	{
-		printf("\tinodes[i].size: %d, inodes[i].name: %s\n", inodes[i].size, inodes[i].name);
+		printf("\tinodes[i].size: %d, inodes[i].first_block: %d, inodes[i].name: %s\n", inodes[i].size,  inodes[i].first_block, inodes[i].name);
 	}
 
 	for (int i = 0; i < sb.num_blocks; i++)
