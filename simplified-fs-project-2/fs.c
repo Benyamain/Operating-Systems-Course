@@ -102,3 +102,24 @@ sync_fs()
 
 	fclose(file);
 }
+
+void
+print_fs()
+{
+	/* Superblock printing */
+	printf("Superblock data ...\n");
+	printf("\tsb.num_inodes: %d\n", sb.num_inodes);
+	printf("\tsb.num_blocks: %d\n", sb.num_blocks);
+	printf("\tsb.size_blocks: %d\n", sb.size_blocks);
+
+	/* Inode printing */
+	for (int i = 0; i < sb.num_inodes; i++)
+	{
+		printf("\tinodes[i].size: %d, inodes[i].name: %s\n", inodes[i].size, inodes[i].name);
+	}
+
+	for (int i = 0; i < sb.num_blocks; i++)
+	{
+		printf("\tBlock Number: %d, dbs[i].num_blocks: %d, dbs[i].next_block_num: %s\n", i, dbs[i].num_blocks, dbs[i].next_block_num);
+	}
+}
