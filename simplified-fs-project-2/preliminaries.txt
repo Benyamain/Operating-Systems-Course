@@ -1,0 +1,18 @@
+Filesystem Structure
+--------------------
+
+* Superblock
+	* Write
+	* Read
+
+* Inode
+	* Write
+	* Read
+
+* Datablock
+	* Write
+	* Read
+
+* File
+	* Write
+	* Read
