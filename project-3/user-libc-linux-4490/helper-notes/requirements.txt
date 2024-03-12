@@ -1,0 +1,13 @@
+Your shell's behavior must match the output shown in the sample session below. Use this blackbox demo shell executable program as a model!
+
+Your shell must be able to handle the cd command fully (see sample session).
+
+Your shell must ignore all extra whitespace on the command line: Entering the input line " \t\t date \t \n" should produce the same result as entering "date\n".
+
+Your shell must be able to run any single multi-argument command such as wc -l /etc/passwd, as well as standard command pipelines such as grep -i tcp /etc/services | tr a-z A-Z | head
+
+Your code must use only the Llibc codebase, and the only allowed system calls and library functions are the ones there
+
+The only allowed #include line is: #include "Llibc.h"
+
+Your submission should be a single unix tarball consisting of only C source files along with compilation commands.

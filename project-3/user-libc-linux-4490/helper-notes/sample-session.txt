@@ -1,0 +1,64 @@
+$ ./demo-shell-static-riscv64-linux
+$ date
+Mon Mar 11 07:34:34 UTC 2024
+$ cd /
+$ pwd
+/
+$ cd
+$ pwd
+/tmp
+$      pwd
+/tmp
+$ cd /foobar
+Could not cd to "/foobar"
+$ cd /var/log/apt
+$ pwd
+/var/log/apt
+$ ls
+eipp.log.xz       history.log.2.gz  term.log       term.log.3.gz
+history.log       history.log.3.gz  term.log.1.gz  term.log.4.gz
+history.log.1.gz  history.log.4.gz  term.log.2.gz
+$ cd ..
+$ pwd
+/var/log
+$ ls
+README                 alternatives.log.3.gz  dpkg.log.1      journal
+Xorg.0.log             apt                    dpkg.log.2.gz   lastlog
+Xorg.0.log.old         bootstrap.log          dpkg.log.3.gz   private
+alternatives.log       btmp                   dpkg.log.4.gz   runit
+alternatives.log.1     btmp.1                 faillog         sysinfo
+alternatives.log.2.gz  dpkg.log               fontconfig.log  wtmp
+$ cd apt
+$ pwd
+/var/log/apt
+$ ls -l
+total 92
+-rw-r--r-- 1 root root 24592 Feb 17 16:46 eipp.log.xz
+-rw-r--r-- 1 root root     0 Mar  1 03:48 history.log
+-rw-r--r-- 1 root root  1828 Feb 17 16:46 history.log.1.gz
+-rw-r--r-- 1 root root  4990 Jan 23 12:31 history.log.2.gz
+-rw-r--r-- 1 root root   305 Jan  3 06:05 history.log.3.gz
+-rw-r--r-- 1 root root  4228 Nov 22 07:19 history.log.4.gz
+-rw-r----- 1 root adm      0 Mar  1 03:48 term.log
+-rw-r----- 1 root adm   4885 Feb 17 16:46 term.log.1.gz
+-rw-r----- 1 root adm  13644 Jan 23 12:31 term.log.2.gz
+-rw-r----- 1 root adm    794 Jan  3 06:05 term.log.3.gz
+-rw-r----- 1 root adm  11415 Nov 22 07:19 term.log.4.gz
+$            cd
+$ pwd
+/tmp
+$           tr     a-z     A-Z
+hello 123 world
+HELLO 123 WORLD
+^D
+$ foofoofoo
+execvp error for foofoofoo, errno = 2
+$ pwd
+/tmp
+$   ls -l   |   wc
+     85     758    5402
+$ ls -l | wc -l
+85
+$  grep  -i  tcp  /etc/services    |    wc
+    219    1152    8238
+$ ^D
