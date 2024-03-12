@@ -1,0 +1,272 @@
+#include "Llibc.h"
+
+#define BUFSIZE 1024    /* Line buffer size */
+#define NTOKS 128       /* Max number of tokens in a line */
+#define NCMDS 64        /* Max number of full commands in the pipeline */
+
+/*
+
+    Pipeline:   cmd_0 | cmd_1 | . . . | cmd_m-1
+
+Let buf[] = line entered by user, last char must be '\n'.
+
+Example:
+
+         buf[] = "  cal 1752|tr   a-z A-Z  |sort   -r\n"
+
+This line needs to be parsed into three separate full command vectors
+(each terminated by pipe-symbol or newline) as follows:
+
+    Full command vector 1 :  cal 1752     {"cal", "1752", (char *)0};
+    Full command vector 2 :  tr a-z A-Z   {"tr", "a-z", "A-Z", (char *)0};
+    Full command vector 3 :  sort -r      {"sort", "-r", (char *)0};
+
+How do you do this?
+
+In two steps:  Step 1 is a matter of "null"-ing some key bytes in the
+line to form the tokens plus initializing token pointers ptk[] pointing
+to the beginning of each token, with a null pointer at the end each
+command vector.  Then Step 2 finishes by adding m pointers to pointers,
+pcm[0], ..., pcm[m-1], where each pcm[j] points to the pointer to the first
+token of the j-th command vector, and m is the number of command vectors.
+
+Start by allocating storage for the NTOKS pointers to char
+(char *ptk[NTOKS] will do it).  Then:
+
+Step 1 : Null the token-ending bytes and set up token pointers ptk[]
+
+This is done using the function:
+
+    int setptrs(int bufsize, char buf[], char *ptk[]);
+
+which scans the bytes in the line buffer buf[] from left to right.
+While doing that, it detects when a token begins and when it ends,
+nulls the byte immediately after each token and sets up the
+elements of the ptk[] array of "token pointers" for the entire pipeline,
+with NULL pointers as pipeline separators.
+
+Calling setptrs() on our example buf[] will modify buf[] and
+set up the following ptk[] array:
+
+    Replacement nulls:               0    0  0     0   0      0    0
+                       buf[] = "  cal 1752|tr   a-z A-Z  |sort   -r\n"
+                                  ^   ^    ^    ^   ^     ^      ^
+                                  |   |    |    |   |     |      |
+    ptk[0] = NULL (initial)       |   |    |    |   |     |      |
+    ptk[1]------------------------+   |    |    |   |     |      |
+    ptk[2]----------------------------+    |    |   |     |      |
+    ptk[3] = NULL, saw '|', end cmd vec    |    |   |     |      |
+    ptk[4]---------------------------------+    |   |     |      |
+    ptk[5]--------------------------------------+   |     |      |
+    ptk[6]------------------------------------------+     |      |
+    ptk[7] = NULL, end of second commnand vector          |      |
+    ptk[8]------------------------------------------------+      |
+    ptk[9]-------------------------------------------------------+
+    ptk[10] = NULL. \ saw '\n', end the last command vector
+    ptk[11] = NULL, / and add pipeline terminator
+
+This can be done in a single pass while we scan the line chars.  While
+scanning the bytes of the line, null the byte after the end of each token,
+and set pointers as entries in the array ptk[] pointing to appropriate
+line buffer locations as follows:
+
+- Begin by setting ptk[0] = NULL, then start scanning the line byte by byte
+- Regard the pipe symbol as a special one that terminates a command vector
+- Whenever the beginning of a non-pipe token word is detected, add
+  a ptk[] entry (pointing to the first character of this token)
+- Whenever the end of a token word is detected, null the byte immediately
+  after the token in the buf[] array
+- If a pipe symbol char '|' or a newline char '\n' is detected, null the
+  character and add a null pointer to the ptk[] array to mark the end
+  of a full command vector
+- After scanning the entire line, terminate the whole pipeline by adding
+  another additional NULL entry (so the last two ptk[] entries will be NULL)
+
+Step 2 : Set up command vector pointers in pcm[]
+
+Once setptrs() has done its work, the main() function can set up
+another array of pointers, char **pcm[], like this:
+
+- The array pcm[] of pointers will point to the ptk[] entries that
+  point to the first token of each command vector
+
+After main does this work, our example will look like this:
+
+                                           0    0  0     0   0      0    0
+                             buf[] = "  cal 1752|tr   a-z A-Z  |sort   -r\n"
+                                        ^   ^    ^    ^   ^     ^      ^
+  pcm[0] ------------+                  |   |    |    |   |     |      |
+  pcm[1] ---------+  |    ptk[0] = NULL |   |    |    |   |     |      |
+  pcm[2] ------+  |  +--> ptk[1]--------+   |    |    |   |     |      |
+               |  |       ptk[2]------------+    |    |   |     |      |
+               |  |       ptk[3] = NULL, saw '|' |    |   |     |      |
+               |  +-----> ptk[4]-----------------+    |   |     |      |
+               |          ptk[5]----------------------+   |     |      |
+               |          ptk[6]--------------------------+     |      |
+               |          ptk[7] = NULL, saw '|'                |      |
+               +--------> ptk[8]--------------------------------+      |
+                          ptk[9]---------------------------------------+
+                          ptk[10] = NULL \ saw '\n', terminate command vector
+                          ptk[11] = NULL / and add pipeline terminator
+
+  At this point, we will have m command vecs, pointed to by
+  pcm[0], pcm[1], ..., pcm[m - 1].
+
+*/
+
+/* 
+    Function setptrs():  Given a line buffer, set up an array of
+    token pointers as described.
+
+    Return 0 on success, nonzero on error.
+*/
+int
+setptrs(int bufsize, char buf[], char *ptk[])
+{
+
+    /* Write your code here! */
+
+    /*
+        Idea:  Maintain a boolean state variable in_token which
+        starts out as 0, is set to 1 whenever a non-space non-pipe
+        non-newline char is encountered, and is set to 0 whenever
+        a space, a pipe or a newline char is encountered.  Detect
+        beginning of a token word as a 0-to-1 transition, and
+        the end of a token word as a 1-to-0 transition.
+        At the detection of a token beginning, add a pointer entry
+        in ptk[].  At the detection of a token end, null the byte
+        but also add a null-pointer entry to ptk[] if that byte
+        (before nulling) was a pipe or a newline symbol.
+        Finally, before returning add an additional null pointer
+        to ptk[], so that the entire ptk[] array ends with
+        two consecutive null pointers.
+    */
+}
+
+/* The main shell */
+int
+Lmain(void)
+{
+    char buf[BUFSIZE];
+    char *ptk[NTOKS];
+    char **pcm[NCMDS];
+
+    int k, m, r;
+
+    int fdprev[2], fdnext[2];
+
+    char *HOMEDIR = "/tmp";
+
+    /* The main shell loop */
+    while (1 == 1) {
+
+        /* Print the command prompt.  The simple line below shows just "$ ",
+           but it would be nicere to embed the CWD in the prompt string.
+        */
+        Lprintf("$ ");
+
+        /* Read a user input line into buffer buf[].
+           Terminate unless a positive number of bytes is read */
+        if (Lread(0, buf, BUFSIZE) <= 0)
+            break;
+   
+        /* Set up the ptk[] array of pointers for the entire pipeline */
+        if ((r = setptrs(BUFSIZE, buf, ptk)) != 0)
+            return r;
+
+        /* Set up the array pcm[] of pointers to the pointers
+           to the first command words */
+        m = 0;
+        for (k = 0; !(ptk[k] == 0 && ptk[k + 1] == 0); k++) {
+            if (ptk[k] == 0 && ptk[k + 1] != 0)
+                /* The beginning of a command vector found */
+                pcm[m++] = &ptk[k + 1];
+        }
+        /* Now pcm[0], pcm[1], ..., pcm[m-1] point to the command vectors! */
+
+        /*
+              - If m == 0, then there is no command to run (the user
+                entered an empty line with only whitespace)
+              - If m == 1, there is exactly one command vector, no pipes
+              - If m > 1, this is a pipeline!
+        */
+
+        /* Implement cd (in the case of a single command vec without pipes) */
+        if (m == 1 && Lstrcmp(*pcm[0], "cd") == 0) {
+            /*  Handle the cd command --- write your code here!
+                If the user has typed cd without any additional params,
+                change the process CWD to HOMEDIR.
+                If the user has typed cd with exactly one param, try to
+                change the process CWD to that directory.
+                If the user has typed cd with more than one params,
+                report an error and continue to the next iteration
+                of the shell loop
+            */
+            continue;
+        }
+
+        /* Need just two pairs of FDs for the pipes! */
+        fdprev[0] = fdprev[1] = fdnext[0] = fdnext[1] = -1;
+
+        /*
+            In the case m == 1, there is only one command vector pcm[0]
+            to run, no pipes.  You should verify that in this case
+            the logic below will not use pipe/dup2/close on the pipes!
+        */
+
+        for (k = 0; k < m; k++) {    /* Iterate over the commands */
+
+            if (k != 0) {
+                /* Not the head command, so the preceding command's
+                   write-end pipe will be this command's read-end pipe.
+                   Just shift the FDs accordingly!  */
+                fdprev[0] = fdnext[0];
+                fdprev[1] = fdnext[1];
+            }
+
+            if (k != m - 1)     /* Not tail, create a write-end pipe! */
+                Lpipe(postfd);
+
+            /* Fork child for this command */
+            if (Lfork() == 0) {
+
+                if (k != m - 1) {     /* Not tail */
+                    /*
+                        Write your code here --- appropriate dup2/close lines
+                    */
+                }
+
+                if (k != 0) {         /* Not head */
+                    /*
+                        Write your code here --- appropriate dup2/close lines
+                    */
+                }
+
+                /* Exec this command! */
+                Lexecvp(*pcm[k], pcm[k]);
+                int sysret = errno;
+                Lprintf("execvp error for %s, errno = %d\n", *pcm[k], sysret);
+                Lexit(1);
+            }
+
+            /* Back to parent - parent has no use for pipes! */
+            if (k > 0) {
+                Lclose(fdprev[0]);
+                Lclose(fdprev[1]);
+            }
+
+        }
+
+        /* Parent is done with setting up and executing the whole pipeline,
+           so now wait for all the m children created above */
+        for (k = 0; k < m; k++) {
+            int status;
+            Lwait(&status);
+        }
+
+    }
+
+    Lprintf("\n");
+    return 0;
+
+}
