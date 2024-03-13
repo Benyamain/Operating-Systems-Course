@@ -138,6 +138,29 @@ Lmain(void)
             		continue;
 		}
 
+		/* Implement pwd and ls (in the case of a single command vec without pipes) */
+		if (m == 1)
+		{
+			if (Lstrcmp(*pcm[0], "pwd") == 0)
+			{
+		        	// Handle pwd command
+		        	char cwd[1024];
+		        	if (Lgetcwd(cwd, sizeof(cwd)) != NULL)
+				{
+		            		Lprintf("%s\n", cwd);
+		        	}
+				else
+				{
+					Lprintf("pwd: error getting current working directory\n");
+		        	}
+		    	}
+			else if (Lstrcmp(*pcm[0], "ls") == 0)
+			{
+		        	// Handle ls command
+		        	Lexecvp("/bin/ls", pcm[0]);
+		    	}
+		}
+
         	/* Need just two pairs of FDs for the pipes! */
         	fdprev[0] = fdprev[1] = fdnext[0] = fdnext[1] = -1;
 
