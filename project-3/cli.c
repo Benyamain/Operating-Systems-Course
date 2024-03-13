@@ -145,7 +145,7 @@ Lmain(void)
 			{
 		        	// Handle pwd command
 		        	char cwd[1024];
-		        	if (Lgetcwd(cwd, sizeof(cwd)) != NULL)
+		        	if (Lgetcwd(cwd, sizeof(cwd)) != 0)
 				{
 		            		Lprintf("%s\n", cwd);
 		        	}
