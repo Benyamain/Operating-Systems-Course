@@ -25,7 +25,7 @@ setptrs(int bufsize, char buf[], char *ptk[])
     Lprintf("Set ptk[%d] = NULL\n", tok_idx);
 
     while (buf_idx < bufsize) {
-        Lprintf("Inside while loop, buf_idx = %d\n", buf_idx);
+        /* Lprintf("Inside while loop, buf_idx = %d\n", buf_idx); */
         if (!in_token && buf[buf_idx] != ' ' && buf[buf_idx] != '|' && buf[buf_idx] != '\n') {
             in_token = 1;
             Lprintf("Setting in_token = %d\n", in_token);
@@ -46,6 +46,7 @@ setptrs(int bufsize, char buf[], char *ptk[])
 
     ptk[tok_idx] = NULL;
     Lprintf("Set ptk[%d] = NULL (terminating the array)\n", tok_idx);
+
     return 0;
 }
 

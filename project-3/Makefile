@@ -8,6 +8,6 @@ compile:
 		posix-calls.o \
 		crt-callmain-riscv64.o \
 		Llibc.o
-	@gcc -Wall -c shellprint.c -o shellprint.o
-	@ld -TLlinker.ld -static -nostdlib shellprint.o -L. -l4490 -o shellprint
-	@./shellprint
+	@gcc -Wall -c debugging.c -o debugging.o
+	@ld -TLlinker.ld -static -nostdlib debugging.o -L. -l4490 -o debugging
+	@./debugging
