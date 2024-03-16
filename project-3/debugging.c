@@ -101,8 +101,15 @@ Lmain(void)
                 pcm[m++] = &ptk[k + 1];
                 Lprintf("Set pcm[%d] = &ptk[%d]\n", m - 1, k + 1);
             }
+
+	    // TODO: Delete later
+            if (ptk[k] != 0) {
+		Lprintf("tok[%d] = %s\n", m, ptk[k]);
+		m++;
+	    }
         }
         Lprintf("pcm array set up, m = %d\n", m);
+	Lprintf("Total %d tokens\n", m);
 
         /* Implement cd (in the case of a single command vec without pipes) */
         if (m == 1 && Lstrcmp(*pcm[0], "cd") == 0) {
@@ -163,7 +170,8 @@ Lmain(void)
                     Lprintf("Closed fdprev[0] = %d\n", fdprev[0]);
                 }
 
-                /* Exec this command! */
+                Lprintf("Ethan has a THEORY\n");
+		/* Exec this command! */
                 Lexecvp(*pcm[k], pcm[k]);
                 int sysret = errno;
                 Lprintf("execvp error for %s, errno = %d\n", *pcm[k], sysret);
