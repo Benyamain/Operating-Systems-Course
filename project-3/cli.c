@@ -40,7 +40,7 @@ setptrs(int bufsize, char buf[], char *ptk[])
             		if (!in_token)
 			{
                 		in_token = 1;
-                		ptk[token_idx + 1] = &buf[buf_idx]; // Add pointer to the beginning of the token
+                		ptk[++token_idx] = &buf[buf_idx]; // Add pointer to the beginning of the token
             		}
         	}
 
@@ -99,10 +99,11 @@ Lmain(void)
 		{
             		if (ptk[k] == 0 && ptk[k + 1] != 0)
 			{
-                		/* The beginning of a command vector found */
+                		// The beginning of a command vector found
                 		pcm[m++] = &ptk[k + 1];
 			}
         	}
+
         	/* Now pcm[0], pcm[1], ..., pcm[m-1] point to the command vectors! */
 
 	        /*
@@ -112,6 +113,11 @@ Lmain(void)
 	        */
 
         	/* Implement cd (in the case of a single command vec without pipes) */
+
+		if (m == 0) {
+			continue;
+		}
+
         	if (m == 1 && Lstrcmp(*pcm[0], "cd") == 0)
 		{
             		if (pcm[0][1] == NULL)
@@ -136,29 +142,6 @@ Lmain(void)
                 		Lprintf("cd: too many arguments\n");
             		}
             		continue;
-		}
-
-		/* Implement pwd and ls (in the case of a single command vec without pipes) */
-		if (m == 1)
-		{
-			if (Lstrcmp(*pcm[0], "pwd") == 0)
-			{
-		        	// Handle pwd command
-		        	char cwd[1024];
-		        	if (Lgetcwd(cwd, sizeof(cwd)) != 0)
-				{
-		            		Lprintf("%s\n", cwd);
-		        	}
-				else
-				{
-					Lprintf("pwd: error getting current working directory\n");
-		        	}
-		    	}
-			else if (Lstrcmp(*pcm[0], "ls") == 0)
-			{
-		        	// Handle ls command
-		        	Lexecvp("/bin/ls", pcm[0]);
-		    	}
 		}
 
         	/* Need just two pairs of FDs for the pipes! */
