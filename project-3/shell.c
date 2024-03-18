@@ -15,28 +15,27 @@ int redirection_out(const char* file_path, int append_mode);
 */
 int tokenize_buffer(int buffer_size, char buffer[], char *token_ptrs[]) {
     int input_tkn = 0, tok_idx = 0, buf_idx;
-    char prev_buf_char = '\0';
 
     token_ptrs[tok_idx] = NULL;
 
     for (buf_idx = 0; buf_idx < buffer_size && buffer[buf_idx] != '\n'; buf_idx++) {
-        if (buffer[buf_idx] == ' ' || buffer[buf_idx] == '\t' || buffer[buf_idx] == '|' || buffer[buf_idx] == '\n') {
-           if (input_tkn) {
-              buffer[buf_idx] = '\0';
-              input_tkn = 0;
-           }
-
-           if (buffer[buf_idx] == '|' && prev_buf_char != '\0') {
-              token_ptrs[++tok_idx] = NULL;
-           }
+        if (buffer[buf_idx] == ' ' || buffer[buf_idx] == '\t') {
+            if (input_tkn) {
+                buffer[buf_idx] = '\0';
+                input_tkn = 0;
+            }
+        } else if (buffer[buf_idx] == '|') {
+            if (input_tkn) {
+                buffer[buf_idx] = '\0';
+                input_tkn = 0;
+            }
+            token_ptrs[++tok_idx] = NULL;
+        } else {
+            if (!input_tkn) {
+                token_ptrs[++tok_idx] = &buffer[buf_idx];
+                input_tkn = 1;
+            }
         }
-        else {
-	   if (!input_tkn) {
-               token_ptrs[++tok_idx] = &buffer[buf_idx];
-               input_tkn = 1;
-           }
-        }
-        prev_buf_char = buffer[buf_idx];
     }
 
     if (input_tkn) {
@@ -146,8 +145,7 @@ int Lmain(void) {
                 Lpipe(next_pipe);
             }
 
-            int child_pid = Lfork();
-            if (child_pid == 0) {
+            if (Lfork() == 0) {
                 if (k != num_cmds - 1) {
                     Ldup2(next_pipe[1], 1);
 		    Lclose(next_pipe[0]);
@@ -182,28 +180,16 @@ int Lmain(void) {
                     }
                 }
 
-                Lexecvp(cmd_ptrs[k][0], cmd_ptrs[k]);
+                Lexecvp(*cmd_ptrs[k], cmd_ptrs[k]);
                 int sysret = errno;
                 Lprintf("execvp error for %s, errno = %d\n", *cmd_ptrs[k], sysret);
                 Lexit(1);
-            }
-	    else if (child_pid < 0) {
-                Lfprintf(2, "Fork failed, errno = %d\n", errno);
             }
 
             if (k > 0) {
                 Lclose(prev_pipe[0]);
                 Lclose(prev_pipe[1]);
             }
-        }
-
-        for (int p = 0; p < 2; p++) {
-            if (prev_pipe[p] != -1) {
-	       Lclose(prev_pipe[p]);
-	    }
-            if (next_pipe[p] != -1) {
-	       Lclose(next_pipe[p]);
-	    }
         }
 
         for (int c = 0; c < num_cmds; c++) {
