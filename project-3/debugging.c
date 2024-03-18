@@ -40,11 +40,18 @@ setptrs(int bufsize, char buf[], char *ptk[])
                 ptk[tok_idx++] = NULL;
                 Lprintf("Set ptk[%d] = NULL\n", tok_idx - 1);
             }
-        }
+        } else if (!in_token && buf[buf_idx] == '|') {
+		buf[buf_idx] = '\0';
+		ptk[tok_idx++] = NULL;
+		Lprintf("Checking for pipe\n");
+	}
+	//Lprintf("Incrementing buf_idx = %d\n", buf_idx);
+	//Lprintf("buf: %c\n", buf[buf_idx]);
         buf_idx++;
     }
 
     ptk[tok_idx] = NULL;
+    ptk[tok_idx + 1] = NULL;
     Lprintf("Set ptk[%d] = NULL (terminating the array)\n", tok_idx);
 
     return 0;
@@ -95,18 +102,26 @@ Lmain(void)
            to the first command words */
         m = 0;
         Lprintf("Initialized m = %d\n", m);
-        for (k = 0; !(ptk[k] == 0 && ptk[k + 1] == 0); k++) {
+        /*for (k = 0; !(ptk[k] == 0 && ptk[k + 1] == 0); k++) {
             Lprintf("Inside for loop, k = %d\n", k);
             if (ptk[k] == 0 && ptk[k + 1] != 0) {
                 pcm[m++] = &ptk[k + 1];
                 Lprintf("Set pcm[%d] = &ptk[%d]\n", m - 1, k + 1);
+            }*/
+
+	// TODO: Maybe delete later?
+	for (k = 0; ptk[k] != NULL ; k++) {
+            Lprintf("Inside for loop, k = %d\n", k);
+            if (ptk[k] != NULL && ptk[k + 1] == NULL) {
+                pcm[m++] = &ptk[k];
+                Lprintf("Set pcm[%d] = &ptk[%d]\n", m - 1, k);
             }
 
 	    // TODO: Delete later
-            if (ptk[k] != 0) {
+            /*if (ptk[k] != 0) {
 		Lprintf("tok[%d] = %s\n", m, ptk[k]);
 		m++;
-	    }
+	    }*/
         }
         Lprintf("pcm array set up, m = %d\n", m);
 	Lprintf("Total %d tokens\n", m);
