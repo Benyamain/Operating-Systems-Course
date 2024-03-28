@@ -167,3 +167,10 @@ Enter a key [f|s|q (syscall) or v (view tasks)] :
 How do we know what fork process becomes a child of another? When the task switch runs on the current process fork, and we create a new fork process while under that current process!! 
 
 How is it possible to kill the current process PID (marked by the circle), and have a child underneath it at the same time?! I thought the current process is the most recent newly created fork(), how can you manipulate? By task switching!!
+
+P1 is the initial process
+The fork system call be used by P1 to create new child processes with PIDs ranging from 2 to 8
+After creating a child process, either the parent or the child can continue executing and perform additional fork system calls to create more processes
+The switch system call allows switching between processes, allowing for arbitrary process hierarchies by executing fork calls from different processes
+The exit system calls allow us to terminate any process, except for P1
+By carefully coordinating the sequence of fork, switch, and exit system calls, it is possible to construct any desired process tree structure with a maximum of 8 nodes
