@@ -174,3 +174,7 @@ After creating a child process, either the parent or the child can continue exec
 The switch system call allows switching between processes, allowing for arbitrary process hierarchies by executing fork calls from different processes
 The exit system calls allow us to terminate any process, except for P1
 By carefully coordinating the sequence of fork, switch, and exit system calls, it is possible to construct any desired process tree structure with a maximum of 8 nodes
+
+Run:
+`make clean && make`
+`./kernel`
