@@ -356,10 +356,10 @@ void
 printTaskQueues(void)
 {
     /* Add YOUR CODE here!  Match with output of kernel.prebuilt */
-	Lprintf("--- printing current task and queues ---\n");
-	Lprintf("	Now running -> [%ld %ld] (PID %ld, Priority %ld, PPID %ld)\n", do_getpid(), running->priority, do_getpid(), running->priority, running->ppid);
-	printList("	readyQueue", readyQueue);
-	printList("	freeList", freeList);
+	Lprintf("     --- printing current task and queues ---\n");
+	Lprintf("     Now running -> [%ld %ld] (PID %ld, Priority %ld, PPID %ld)\n", do_getpid(), running->priority, do_getpid(), running->priority, running->ppid);
+	printList("     readyQueue", readyQueue);
+	printList("     freeList", freeList);
 
     /* Hint: You can use the printList() function here even before
        you write its code in queue.c; the pre-compiled queue.o
