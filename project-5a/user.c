@@ -25,7 +25,8 @@ uprogA(void)
 {
 
   char *fname = "uprogA";
-  int c, CR, ret, mypid;
+  char c, CR;
+  int ret, mypid;
   int iter = 0, nsyscalls = 0, nviews = 0;
 
   mypid = do_getpid();
