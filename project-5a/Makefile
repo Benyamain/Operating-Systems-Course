@@ -115,3 +115,10 @@ clean: $(CLEANSUBDIR)
 objclean: $(OBJCLEANSUBDIR)
 	rm -f $(OBJS)
 
+# checking the code for kernel.c and queue.c
+# drop each of the programs as you are implementing for each file
+# so by the end, you should have only the make commands
+#make clean
+#    cp ./pre-compiled/kernel.o .      # Drop this once you finish kernel.c
+#    cp ./pre-compiled/queue.o .       # Drop this once you finish queue.c
+#make
