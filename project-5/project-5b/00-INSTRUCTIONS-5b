@@ -1,0 +1,61 @@
+Programming 5B Instructions
+===========================
+
+In 5A, the kfork() kernel function did not implement standard unix fork
+(the child was reset to its initial start, instead of cloning/duplicating
+the parent at the point where it made the fork syscall).  Also, there
+was only one user program function in user.c, and so there was no need
+for any exec syscall.
+
+In Part 5B, you will need to:
+
+(1) Standardize the fork syscall by modifying kfork() in kernel.c
+    in such a way that it creates a child that is a clone/replica
+    of the parent (except of course that the child will have a
+    different PID and the return value from the fork syscall will be
+    0 for the child and child-PID for the parent)
+
+(2) Implement the exec syscall by modifying kexec() in kernel.c
+    such that calling do_exec(&progaddr) immediately abondons
+    the currently running program's code and starts executing from
+    the address &progaddr, with stack and CPU registers reset to
+    their fresh initial state
+
+To implement (1) and (2) above, you will need to write (very short)
+code for the functions in the file kernel.c that are marked with
+the comment `Add YOUR CODE here':
+
+    # Functions to complete in file kernel.c
+    do_kfork():             Follow comments in body
+    do_exec():              Follow comments in body
+
+Help and hints for 5B:
+
+Some hints for implementing kfork() are in the kernel.c file.
+
+The context switching assembly routines have been modularized
+for use with kfork().  The new assembly file cs-riscv64.S has
+three implemented routines:  savectxfork, tswitch, runctx.
+Being familiar with their functionality will help in 5B.
+(The file cs-riscv64.S is heavily commented.)
+
+Note:  The sub-directory ./pre-compiled/ contains:
+
+  - A black-box statically-linked riscv64/linux executable kernel.prebuilt
+  - Pre-compiled object code file kernel.o
+
+You can rebuild a black-box kernel using the pre-compiled kernel.o file:
+
+    make clean
+    cp ./pre-compiled/kernel.o .      # Drop this once you finish kernel.c
+    make
+
+Then run the built kernel and test it out thoroughly, making sure its
+behavior is identical to that of the pre-built one.
+
+Once everything runs correctly, you are done - submit your source code for
+kernel.c c in a unix tarball, following assignment instructions.
+
+DO NOT INCLUDE ANY COMPILED BINARY OBJECT OR EXECUTABLE FILE
+IN YOUR SUBMISSION TARBALL.
+
