@@ -284,6 +284,8 @@ int
 do_getpid(void)
 {
   /* Add YOUR CODE here - one line can be enough! (Assignment 5A) */
+	/* Return the PID of the currently running process */
+	return running->pid;
 }
 
 /********************************************************************
@@ -404,6 +406,10 @@ printTaskQueues(void)
     /* Add YOUR CODE here!  Match with output of kernel.prebuilt */
 
     /* Programming Assignment 5A */
+	Lprintf("     --- printing current task and queues ---\n");
+	Lprintf("     Now running -> [%ld %ld] (PID %ld, Priority %ld, PPID %ld)\n", do_getpid(), running->priority, do_getpid(), running->priority, running->ppid);
+	printList("     readyQueue", readyQueue);
+	printList("     freeList", freeList);
 
 }
 
