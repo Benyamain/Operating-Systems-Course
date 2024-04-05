@@ -64,7 +64,7 @@ int runctx(void);               /* Run/resume from context (in asm) */
 *********************************************************************/
 int
 initctx(PROC *p, void *progaddr)
-/* 
+/*
   We have simplified the type of the second argument progaddr as `void *',
   but it really should be `int (*progaddr)(void)', since the address of
   a user prog function is a pointer to a function of void returning int.
@@ -169,9 +169,17 @@ kfork(void)
             (recall riscv function calling convention)
   */
 
+	/* Copy child's stack and context from the parent */
+	Lmemcpy(p->ustack, running->ustack, sizeof(p->ustack));
+	Lmemcpy(p->uctx, running->uctx, sizeof(p->uctx));
+
+	/* Fix up the child's context */
+	p->uctx[2] = (long) &(p->ustack[SSIZE - 1]);	// Update sp in the pcb that holds register x2
+	p->uctx[10] = 0;	// Return value for the child (a0) is register x10
+
 
   /* Enter p (child) into readyQueue */
-  enqueue(&readyQueue, p);          
+  enqueue(&readyQueue, p);
 
   return p->pid;
 
@@ -182,6 +190,14 @@ kexec(void *progaddr)
 {
 
   /* Add YOUR CODE here! */
+	/* Re-initialize the current process's context */
+	initctx(running, progaddr);
+
+	/* Transfer control to the new program */
+	runctx();
+
+	/* Should not be reached */
+	return -1;
 
 }
 

@@ -66,7 +66,7 @@ printList(char *name, PROC *p)
     Lprintf("%s = ", name);
 
     /* Print linked list of PROCs as:  [pid priority]-> ... ->NULL */
-	while (p!= NULL) {
+	while (p != NULL) {
 		Lprintf("[%ld %ld]->", p->pid, p->priority);
 		p = p->next;
 	}
