@@ -12,8 +12,8 @@
 #define RUNNING   2         /* For clarity only, not needed or used */
 
 //#define STOPPED    3      /* To be used later */
-//#define SLEEPING   4      /* To be used later */
-//#define ZOMBIE     5      /* To be used later */
+#define SLEEPING   4      /* To be used later */
+#define ZOMBIE     5      /* To be used later */
 
 /* Process Control Block (PCB), like linux task_struct */
 typedef struct proc {

@@ -15,6 +15,8 @@ PROC *running;      /* Ptr to PCB of current running process (at most one) */
 PROC *freeList;     /* Ptr to head of the queue (linked list) of free PIDs */
 PROC *readyQueue;   /* Ptr to head of the queue of ready to run processes */
 
+PROC *sleepList; 	/* Ptr to head of the queue of sleeping processes */
+
 /* File queue.c defines the scheduler's queue-management routines:
     int enqueue(PROC **, PROC *);       // Scheduler enqueueing routine
     PROC *dequeue(PROC **);             // Scheduler dequeueing routine
@@ -46,6 +48,11 @@ int initctx(PROC *p, void *progaddr);   /* Initialize a PROC context area */
 int kfork(void);                /* kernel rouine for fork() STANDARDIZED! */
 int kexit(void);                /* kernel routine for _exit() */
 int kexec(void *progaddr);      /* kernel exec */
+
+int ksleep(int event);
+int kwakeup(int event);
+int kwait(int *status);
+
 int scheduler(void);            /* kernel scheduler */
 int queinit(void);              /* system que and PROC 0 initialization */
 // Assembly routines
@@ -158,7 +165,7 @@ kfork(void)
 
     Hints:
       - Don't re-initilize p's context to the program's starting state
-      - Copy child'ss stack and context from the parent 
+      - Copy child'ss stack and context from the parent
       - But there will be two things wrong in the child's context
         that you will need to fix up:
         (1) The saved stack pointer in the child's context will be
@@ -204,21 +211,39 @@ kexec(void *progaddr)
 /******************************************
   kernel routine kexit() (no zombie)
 *******************************************/
+/* Terminates the running process and wakes up its parent if waiting */
 int
 kexit(void)
 {
   running->status = FREE;
   running->priority = 0;
-  enqueue(&freeList, running);              /* Enter running into freeList */
+  enqueue(&freeList, running);              // Enter running into freeList
 
-  Lprintf(" K: -------------------------------------\n"); 
+  Lprintf(" K: -------------------------------------\n");
   Lprintf(" K: proc %ld: TERMINATED!\n", running->pid);
   Lprintf(" K: -------------------------------------\n");
-  printList("     freeList", freeList);     /* Show freeList */
+  printList("     freeList", freeList);     // Show freeList
 
   Lprintf(" K: Switching task via tswitch() ..\n");
-  return tswitch();                         /* Call task switcher */
+  return tswitch();                         // Call task switcher
 }
+
+/* Terminates the running process and wakes up its parent if waiting */
+/*int
+kexit(int exitCode)
+{
+	running->exitCode = exitCode;
+	running->status = ZOMBIE;
+	Lprintf(" K: -------------------------------------\n");
+	Lprintf(" K: proc %ld: TERMINATED!\n", running->pid);
+	Lprintf(" K: -------------------------------------\n");
+	printList("     freeList", freeList);
+
+	// Wake up parent if it's waiting
+  	kwakeup(running->ppid);
+
+  	return tswitch();
+}*/
 
 /* system call fork() */
 int
@@ -236,13 +261,67 @@ do_kfork(void)
     Lprintf(" K: kfork failed!\n");
   } else if (child == 0) {              /* child */
     Lprintf(" K: child created after fork, pid = %d, becoming live to run\n",
-      running->pid); 
+      running->pid);
   } else {                              /* child > 0, so parent */
-    Lprintf(" K: proc %ld kforked a child, pid = %d\n", running->pid, child); 
+    Lprintf(" K: proc %ld kforked a child, pid = %d\n", running->pid, child);
     printList("     readyQueue", readyQueue);
   }
   return child;
 }
+
+/* Puts the running process to sleep waiting for a specific event */
+/*int
+ksleep(int event)
+{
+ 	running->status = event;
+	//running->status = SLEEPING;
+	enqueue(&sleepList, running);
+	return tswitch();
+}*/
+
+/* Wakes up all processes waiting for a specific event  */\
+/*int
+kwakeup(int event)
+{
+	PROC *p, *tmp;
+	p = sleepList;
+
+	while (p) {
+		if (p->status == event) {
+			tmp = p;
+			p = p->next;
+			dequeue(&sleepList);
+			enqueue(&readyQueue, tmp);
+		}
+		else {
+			p = p->next;
+		}
+	}
+
+	return 0;
+}*/
+
+/* Waits for a child process to exit and retrieves its exit status  */
+/*int
+kwait(int *status)
+{
+	PROC *p;
+
+	while (1 == 1) {
+		for (p = proc; p < &proc[NPROC]; p++) {
+			if (p->ppid == running->pid && p->status == ZOMBIE) {
+				*status = p->priority;	// Use priority to store exit code
+				p->status = FREE;
+				p->priority = 0;
+				enqueue(&freeList, p);
+
+				return p->pid;
+			}
+		}
+
+		ksleep(running->pid);	// Use process ID as the event for waiting
+	}
+}*/
 
 /* system call exec() */
 int
@@ -264,9 +343,9 @@ do_switch(void)
 {
   int ret;
 
-  Lprintf( 
+  Lprintf(
     " K: proc %ld switching out voluntarily, calling tswitch() ..\n",
-    running->pid);   
+    running->pid);
 
   ret = tswitch();      /* Context save-restore done in assembly code */
 
@@ -304,6 +383,27 @@ do_getpid(void)
 	return running->pid;
 }
 
+/* system call sleep() */
+/*int
+do_sleep(int event)
+{
+	return ksleep(event);
+}*/
+
+/* system call wakeup() */
+/*int
+do_wakeup(int event)
+{
+	return kwakeup(event);
+}*/
+
+/* system call wait() */
+/*int
+do_wait(int *status)
+{
+	return kwait(status);
+}*/
+
 /********************************************************************
   Initialization routine for the MT system OS kernel:
     - Set up the two queues (linked lists):  freeList and readyQue
@@ -318,16 +418,19 @@ queinit(void)
   /* Initialize a linked list of all PROCs:  PCB0 -> PCB1 -> ... -> NULL */
   for (i = 0; i < NPROC; i++) {
     p = &proc[i];       /* p now points to the i-th PCB in the table */
-    p->pid = i; 
+    p->pid = i;
     p->status = FREE;
     p->priority = 0;
     p->next = p+1;      /* I.e. (PROC *) &proc[i+1] (beauty of C pointers) */
   }
   proc[NPROC-1].next = (PROC *) 0;  /* Terminating null ptr */
- 
+
   /* Set heads for the two queues (linked lists), freeList and readyQueue */
   freeList = &proc[0];          /* Put all PROCs in freeList, with head = P0 */
   readyQueue = (PROC *) 0;      /* The readyQueue is empty */
+
+	/* Set head for the sleep queue */
+	sleepList = (PROC *) 0;
 
   /* Create P0 as the initial running process */
   p = dequeue(&freeList);       /* This p is P0 */
@@ -386,7 +489,7 @@ Lmain(int argc, char *bootparms[])
 /*********** The scheduler *************/
 int
 scheduler(void)
-{ 
+{
   /* Log scheduler action steps verbosely */
 
   Lprintf(" K: Entering scheduler() with cur running -> [%ld %ld]\n",
