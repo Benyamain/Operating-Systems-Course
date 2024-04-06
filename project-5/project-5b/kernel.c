@@ -177,12 +177,12 @@ kfork(void)
   */
 
 	/* Copy child's stack and context from the parent */
-	Lmemcpy(p->ustack, running->ustack, sizeof(p->ustack));
-	Lmemcpy(p->uctx, running->uctx, sizeof(p->uctx));
+	//Lmemcpy(p->ustack, running->ustack, sizeof(p->ustack));
+	//Lmemcpy(p->uctx, running->uctx, sizeof(p->uctx));
 
 	/* Fix up the child's context */
-	p->uctx[2] = (long) &(p->ustack[SSIZE - 1]);	// Update sp in the pcb that holds register x2
-	p->uctx[10] = 0;	// Return value for the child (a0) is register x10
+	//p->uctx[2] = (long) &(p->ustack[SSIZE - 1]);	// Update sp in the pcb that holds register x2
+	//p->uctx[10] = 0;	// Return value for the child (a0) is register x10
 
 
   /* Enter p (child) into readyQueue */
@@ -198,13 +198,13 @@ kexec(void *progaddr)
 
   /* Add YOUR CODE here! */
 	/* Re-initialize the current process's context */
-	initctx(running, progaddr);
+	//initctx(running, progaddr);
 
 	/* Transfer control to the new program */
-	runctx();
+	//runctx();
 
 	/* Should not be reached */
-	return -1;
+	//return -1;
 
 }
 
@@ -430,7 +430,7 @@ queinit(void)
   readyQueue = (PROC *) 0;      /* The readyQueue is empty */
 
 	/* Set head for the sleep queue */
-	sleepList = (PROC *) 0;
+	//sleepList = (PROC *) 0;
 
   /* Create P0 as the initial running process */
   p = dequeue(&freeList);       /* This p is P0 */
