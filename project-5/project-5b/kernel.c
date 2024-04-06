@@ -321,6 +321,12 @@ ksleep(int event)
         return -1;
     }
 
+    // delete later??
+    if (running->pid == 1) {
+        Lprintf("P1 cannot be put to sleep indefinitely.\n");
+        return -1;
+    }
+
     if (readyQueue == NULL && running->pid == 1) {
         Lprintf("Cannot execute sleep() syscall: No other processes in the ready queue.\n");
         return -1;
@@ -374,12 +380,19 @@ kwakeup(int event)
         return -1;
     }
 
+    // delete later??
+    if (running->pid == 1) {
+        Lprintf("P1 cannot be put to sleep indefinitely.\n");
+        return -1;
+    }
+
     PROC *p, *prev;
     p = sleepList;
     prev = NULL;
 
     while (p) {
-        if (p->event == event) {
+	// delete the second condition later??
+        if (p->event == event || p->pid == event) {
             if (prev == NULL) {
                 sleepList = p->next;
             } else {
@@ -436,6 +449,12 @@ kwait(int *status)
 
     if (readyQueue == NULL && running->pid == 1) {
         Lprintf("Cannot execute wait() syscall: No other processes in the ready queue.\n");
+        return -1;
+    }
+
+    // delete later??
+    if (running->pid == 1) {
+        Lprintf("P1 cannot be put to sleep indefinitely.\n");
         return -1;
     }
 

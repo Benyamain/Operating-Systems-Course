@@ -91,3 +91,29 @@
 * not traversing through the sleep list to be able to wakeup any process in there?? do we need to do that??
 
 * the wake syscall command does not wake those processes put to sleep by the wait syscall command, using their pids to wake them is not working  ...
+
+
+
+1. Fix the process state to be sleeping when we do the sleep syscall command:
+	* In the ksleep() function, make sure to set the process status to SLEEPING before enqueueing it to the sleepList.
+
+2. Account for not allowing 0 when putting something to sleep, wait, wakeup, etc.:
+	* In the do_sleep(), do_wakeup(), and any other relevant syscall commands, check if the event number is 0 and handle it appropriately.
+
+3. Can P1 ever be put to sleep? Or should it always be in the ready queue if it is not the current running process?
+	* P1 should not be put to sleep indefinitely. It should always be ready to run if it is not the current running process.
+	* Modify the ksleep() function to check if the running process is P1 and handle it accordingly.
+
+4. The condition to check not to put the very last active process to sleep or wait is not working:
+	* In the do_sleep() and do_wait() functions, check if there is only one active process (the running process) and the ready queue is empty. If so, do not allow the process to sleep or wait.
+
+5. Should the status of a process that uses the wait syscall command use the STOPPED constant?
+	* No, the STOPPED constant is typically used for processes that are explicitly stopped by a signal or a debugging command.
+	* For processes that are waiting using the wait syscall command, you should use the SLEEPING status instead.
+
+6. Not traversing through the sleep list to be able to wake up any process in there? Do we need to do that?
+	* Yes, you should traverse the sleep list to find and wake up the processes that match the specified event number.
+	* Modify the kwakeup() function to traverse the sleepList, find the processes with the matching event number, and move them to the readyQueue.
+
+7. The wake syscall command does not wake up processes put to sleep by the wait syscall command, using their PIDs to wake them is not working:
+	* In the kwakeup() function, check if the event number matches the PID of a sleeping process in the sleepList. If a match is found, wake up that process and move it to the readyQueue.
