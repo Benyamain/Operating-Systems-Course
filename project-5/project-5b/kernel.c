@@ -273,7 +273,7 @@ do_kfork(void)
 /*int
 ksleep(int event)
 {
- 	running->status = event;
+ 	running->event = event;
 	//running->status = SLEEPING;
 	enqueue(&sleepList, running);
 	return tswitch();
@@ -287,7 +287,7 @@ kwakeup(int event)
 	p = sleepList;
 
 	while (p) {
-		if (p->status == event) {
+		if (p->event == event) {
 			tmp = p;
 			p = p->next;
 			dequeue(&sleepList);
@@ -310,7 +310,7 @@ kwait(int *status)
 	while (1 == 1) {
 		for (p = proc; p < &proc[NPROC]; p++) {
 			if (p->ppid == running->pid && p->status == ZOMBIE) {
-				*status = p->priority;	// Use priority to store exit code
+				*status = p->exit_code;	// Use priority to store exit code
 				p->status = FREE;
 				p->priority = 0;
 				enqueue(&freeList, p);
