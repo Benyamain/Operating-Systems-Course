@@ -176,13 +176,18 @@ kfork(void)
             (recall riscv function calling convention)
   */
 
-	/* Copy child's stack and context from the parent */
-	Lmemcpy(p->ustack, running->ustack, sizeof(p->ustack));
-	Lmemcpy(p->uctx, running->uctx, sizeof(p->uctx));
+	/* Initialize the child's context with the current PC value from the parent */
+  	initctx(p, (void *)running->uctx[1]);
 
-	/* Fix up the child's context */
-	p->uctx[2] = (long) &(p->ustack[SSIZE - 1]);	// Update sp in the pcb that holds register x2
-	p->uctx[10] = 0;	// Return value for the child (a0) is register x10
+  	/* Copy the parent's stack to the child's stack */
+  	Lmemcpy(p->ustack, running->ustack, sizeof(p->ustack));
+
+  	/* Adjust the stack pointer in the child's context */
+  	long sp_diff = (long)running->ustack - (long)p->ustack;
+  	p->uctx[2] = running->uctx[2] - sp_diff;
+
+  	/* Set the return value in the child's context to 0 */
+  	p->uctx[10] = 0;
 
 
   /* Enter p (child) into readyQueue */
@@ -212,23 +217,6 @@ kexec(void *progaddr)
   kernel routine kexit() (no zombie)
 *******************************************/
 /* Terminates the running process and wakes up its parent if waiting */
-/*int
-kexit(void)
-{
-  running->status = FREE;
-  running->priority = 0;
-  enqueue(&freeList, running);              // Enter running into freeList
-
-  Lprintf(" K: -------------------------------------\n");
-  Lprintf(" K: proc %ld: TERMINATED!\n", running->pid);
-  Lprintf(" K: -------------------------------------\n");
-  printList("     freeList", freeList);     // Show freeList
-
-  Lprintf(" K: Switching task via tswitch() ..\n");
-  return tswitch();                         // Call task switcher
-}*/
-
-/* Terminates the running process and wakes up its parent if waiting */
 int
 kexit(int exit_code)
 {
@@ -239,7 +227,6 @@ kexit(int exit_code)
 	Lprintf(" K: -------------------------------------\n");
 	Lprintf(" K: proc %ld: TERMINATED!\n", running->pid);
 	Lprintf(" K: -------------------------------------\n");
-	printList("     freeList", freeList);
 
 	// Wake up parent if it's waiting
 	for (p = proc; p < &proc[NPROC]; p++) {
@@ -257,7 +244,15 @@ kexit(int exit_code)
 		}
 	}
 
-  	return tswitch();
+	// Add the terminated process back to the freeList
+    	running->status = FREE;
+    	running->priority = 0;
+    	enqueue(&freeList, running);
+
+	printList("     freeList", freeList);
+
+  	// Schedule the next process
+	return tswitch();
 }
 
 /* system call fork() */
