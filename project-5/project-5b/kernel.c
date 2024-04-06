@@ -302,16 +302,6 @@ do_kfork(void)
 }
 
 /* Sets the event, changes the process status to SLEEPING, enqueues the process into the sleepList, and calls tswitch() */
-/*int
-ksleep(int event)
-{
- 	running->event = event;
-	running->status = SLEEPING;
-	enqueue(&sleepList, running);
-	printList("     sleepList", sleepList);
-	return tswitch();
-}*/
-
 int
 ksleep(int event)
 {
@@ -348,29 +338,6 @@ ksleep(int event)
 }
 
 /* Iterates through the sleepList, wakes up processes waiting for the specified event, and enqueues them into the readyQueue */
-/*int
-kwakeup(int event)
-{
-	PROC *p, *tmp;
-	p = sleepList;
-
-	while (p) {
-		if (p->event == event) {
-			tmp = p;
-			p = p->next;
-			dequeue(&sleepList);
-			tmp->status = READY;
-			enqueue(&readyQueue, tmp);
-			printList("     readyQueue", readyQueue);
-		}
-		else {
-			p = p->next;
-		}
-	}
-
-	return 0;
-}*/
-
 int
 kwakeup(int event)
 {
@@ -420,28 +387,6 @@ kwakeup(int event)
 }
 
 /* Waits for a child process to exit and retrieves its exit status, frees the child process, and returns the child's PID. */
-/*int
-kwait(int *status)
-{
-	PROC *p;
-
-	while (1 == 1) {
-		for (p = proc; p < &proc[NPROC]; p++) {
-			if (p->ppid == running->pid && p->status == ZOMBIE) {
-				*status = p->exit_code;	// Use priority to store exit code
-				p->status = FREE;
-				p->priority = 0;
-				enqueue(&freeList, p);
-				printList("     freeList", freeList);
-
-				return p->pid;
-			}
-		}
-
-		ksleep(running->pid);	// Use process ID as the event for waiting
-	}
-}*/
-
 int
 kwait(int *status)
 {
