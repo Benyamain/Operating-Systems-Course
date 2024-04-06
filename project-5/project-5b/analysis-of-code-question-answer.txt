@@ -1,0 +1,77 @@
+* show the input (Lgets) for what code you want to use when putting the current process on wait (sleep)?? so, basically, when we run the wait syscall command with t, should we check with an event number or no? maybe we should ...
+
+* validate for wait() that if there is only one process currently running and nothing else is in the ready queue list, then we cannot put that process to wait (to sleep??).  we can output a message for this to user.
+
+* double check output matches that of the prebuilt demo
+
+* validate that when we are sleeping the current processes with specific event numbers, if all process go to sleep, no processes in the ready queue list anymore, and there is currently only a single running process, that process cannot be put to sleep. we can output a message for this to user.
+
+* check that when we wakeup a process, we ignore 0 because that sets it in an infinite loop, so 0 should not be considered as an event number?
+
+* see what is the point of the wait() syscall command
+
+* when p1 is the current process, we wait() syscall command it, there is still a process in the ready queue list that is valid, but this also is then added to the sleep list for some odd reason
+
+* when we have more than one process in the sleep list, say we have 2, then i use wake() syscall command on one of them, specifying the event number pid, after doing so, the sleep list gets messed up, but i know why. its because when we are trying to wake up a process that is not the head of the sleep list, the list gets messed up and it just spits out jargon. to fix this, we should only specify the pid that matches what is the process pid of the head (although i am wondering if that is not correct, and we are expected to wakeup any of the processes that are in the sleeping list (whether through pid from the wait syscall command or the event number we put down through sleep syscall command)??
+
+* when something is in the sleep list, does that mean the process should be marked as 1 or 0 [pid 1/0]??
+
+* should the exit code be killing the current process and having a code associated with it? or is it where the exit code is what specifies the pid of some process in the ready queue list or the current process, and kills it and puts it back into the free list?
+
+* does the same thing go when we are trying to sleep something? are we just entering some event number for the current process, or would it just be specifying the pid (given they are the current process or in the ready queue list) to put to sleep ... (of course wait depends on this so it would indirectly concern that syscall command as well) ...
+
+* something very odd is going with wait() syscall command, it puts a lot of processes in the ready queue list in the sleep list, leaving only p1 as the current process and the ready queue list is empty ...
+
+
+
+1. Input for wait() syscall command:
+	* When running the wait() syscall command with 't', we don't need to check for an event number. The wait() syscall is used to wait for a child process to terminate, and it doesn't require an event number as input.
+	* In the current implementation of the kwait() function, the running process's PID is used as the event for waiting. This ensures that the parent process is waiting for its specific child processes to terminate.
+
+2. Validation for wait() syscall:
+	* If there is only one process currently running and no other processes in the ready queue list, we should not allow the wait() syscall to put that process to sleep. This is because if the only running process goes to sleep, there will be no other process to wake it up, resulting in a deadlock situation.
+	* To handle this, we can modify the kwait() function to check if the ready queue is empty and the running process is the only one. If so, we can print an appropriate message to the user indicating that the wait() syscall cannot be executed in this situation.
+
+3. Matching the output with the prebuilt demo:
+	* It's important to ensure that the output of your implementation matches the output of the prebuilt demo as closely as possible. This includes the format of the output messages, the order of events, and the state of the process queues at different points in the execution.
+	* Carefully compare the output of your implementation with the prebuilt demo and make necessary adjustments to align them.
+
+4. Validation for sleep() syscall:
+	* When using the sleep() syscall command to put processes to sleep with specific event numbers, if all processes go to sleep and there are no processes left in the ready queue, the remaining single running process should not be allowed to sleep. Similar to the wait() syscall validation, this is to prevent a deadlock situation.
+	* Modify the ksleep() function to check if the ready queue is empty and the running process is the only one. If so, print a message to the user indicating that the sleep() syscall cannot be executed in this case.
+
+5. Handling event number 0 for wakeup() syscall:
+	* When using the wakeup() syscall command, event number 0 should not be considered as a valid event number. Using event number 0 can lead to unintended behavior or infinite loops.
+	* Modify the kwakeup() function to check if the event number is 0 and handle it appropriately, such as ignoring the wakeup request or printing an error message to the user.
+
+6. Purpose of the wait() syscall command:
+	* The wait() syscall command is used by a parent process to wait for the termination of one of its child processes. It allows the parent process to synchronize with the termination of its child processes and retrieve their exit status.
+	* The wait() syscall is important for proper process synchronization and resource management. It ensures that parent processes are notified when their child processes terminate and can take appropriate actions, such as cleaning up resources or retrieving the exit status.
+
+7. Issue with wait() syscall command and P1:
+	* When P1 is the current process and the wait() syscall command is executed, it seems that a process from the ready queue is added to the sleep list, which shouldn't happen.
+	* This issue needs to be investigated further. Review the implementation of the kwait() function and the handling of the sleep list to identify and fix the problem. Ensure that only the running process (P1 in this case) is added to the sleep list when executing the wait() syscall.
+
+8. Issue with wakeup() syscall command and sleep list:
+	* When there are multiple processes in the sleep list and the wakeup() syscall command is used to wake up a process that is not at the head of the sleep list, the sleep list gets corrupted, resulting in unexpected behavior.
+	* To fix this issue, you can modify the kwakeup() function to handle the case when waking up a process that is not at the head of the sleep list. One approach is to traverse the sleep list, find the process with the matching event number, and remove it from the sleep list while maintaining the integrity of the list.
+	* Another approach is to allow waking up any process in the sleep list, regardless of its position, based on the specified event number. This would require modifying the kwakeup() function to search for and wake up all processes with the matching event number.
+
+9. Process status in the sleep list:
+	* When a process is in the sleep list, its status should be marked as SLEEPING (e.g., [pid SLEEPING]). This indicates that the process is currently in the sleeping state and waiting for a specific event to occur.
+	* Ensure that the status of a process is properly set to SLEEPING when it is added to the sleep list, and that the status is updated accordingly when the process is woken up and moved to the ready queue.
+
+10. Exit code and process termination:
+	* The exit code should be associated with the termination of the current process. When a process terminates using the exit() syscall command, it should specify an exit code that indicates the status or reason for termination.
+	* The exit code is not used to specify the PID of a process to be killed. Instead, it is a value that the terminating process provides to its parent process to convey information about its execution status.
+	* Ensure that the exit code is properly handled in the kexit() function and that it is passed to the parent process when it retrieves the exit status using the wait() syscall.
+
+11. Sleep syscall command and event number:
+	* The sleep syscall command is used to put the current process to sleep until a specific event occurs. The event is identified by an event number.
+	* When executing the sleep syscall command, the user should provide an event number as input. This event number is then used to associate the sleeping process with the specific event it is waiting for.
+	* Ensure that the event number is properly handled in the ksleep() function and that the sleeping process is added to the sleep list with the correct event number.
+
+12. Issue with wait() syscall command and process states:
+	* It seems that when the wait() syscall command is executed, multiple processes from the ready queue are being added to the sleep list, leaving only P1 as the current process and the ready queue empty.
+	* This behavior is unexpected and needs to be investigated and fixed. Review the implementation of the kwait() function and the handling of process states and queues to identify the root cause of the issue.
+	* Ensure that only the running process (the one executing the wait() syscall) is added to the sleep list, and that the other processes in the ready queue remain in their respective states.

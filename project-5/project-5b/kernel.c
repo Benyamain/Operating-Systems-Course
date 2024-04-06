@@ -294,7 +294,7 @@ do_kfork(void)
 }
 
 /* Sets the event, changes the process status to SLEEPING, enqueues the process into the sleepList, and calls tswitch() */
-int
+/*int
 ksleep(int event)
 {
  	running->event = event;
@@ -302,10 +302,25 @@ ksleep(int event)
 	enqueue(&sleepList, running);
 	printList("     sleepList", sleepList);
 	return tswitch();
+}*/
+
+int
+ksleep(int event)
+{
+    if (readyQueue == NULL && running->pid == 1) {
+        Lprintf("Cannot execute sleep() syscall: No other processes in the ready queue.\n");
+        return -1;
+    }
+
+    running->event = event;
+    running->status = SLEEPING;
+    enqueue(&sleepList, running);
+    printList("     sleepList", sleepList);
+    return tswitch();
 }
 
 /* Iterates through the sleepList, wakes up processes waiting for the specified event, and enqueues them into the readyQueue */
-int
+/*int
 kwakeup(int event)
 {
 	PROC *p, *tmp;
@@ -326,10 +341,42 @@ kwakeup(int event)
 	}
 
 	return 0;
+}*/
+
+int
+kwakeup(int event)
+{
+    if (event == 0) {
+        Lprintf("Invalid event number: 0. Wakeup request ignored.\n");
+        return -1;
+    }
+
+    PROC *p, *prev;
+    p = sleepList;
+    prev = NULL;
+
+    while (p) {
+        if (p->event == event) {
+            if (prev == NULL) {
+                sleepList = p->next;
+            } else {
+                prev->next = p->next;
+            }
+            p->status = READY;
+            enqueue(&readyQueue, p);
+            printList("     readyQueue", readyQueue);
+            p = p->next;
+        } else {
+            prev = p;
+            p = p->next;
+        }
+    }
+
+    return 0;
 }
 
 /* Waits for a child process to exit and retrieves its exit status, frees the child process, and returns the child's PID. */
-int
+/*int
 kwait(int *status)
 {
 	PROC *p;
@@ -349,6 +396,35 @@ kwait(int *status)
 
 		ksleep(running->pid);	// Use process ID as the event for waiting
 	}
+}*/
+
+int
+kwait(int *status)
+{
+    PROC *p;
+
+    if (readyQueue == NULL && running->pid == 1) {
+        Lprintf("Cannot execute wait() syscall: No other processes in the ready queue.\n");
+        return -1;
+    }
+
+    while (1) {
+        for (p = proc; p < &proc[NPROC]; p++) {
+            if (p->ppid == running->pid && p->status == ZOMBIE) {
+                *status = p->exit_code;
+                p->status = FREE;
+                p->priority = 0;
+                enqueue(&freeList, p);
+                printList("     freeList", freeList);
+                return p->pid;
+            }
+        }
+
+        running->status = SLEEPING;
+        enqueue(&sleepList, running);
+        printList("     sleepList", sleepList);
+        tswitch();
+    }
 }
 
 /* system call exec() */
