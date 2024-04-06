@@ -13,42 +13,6 @@
 int uprogA(void);
 int uprogB(void);
 
-int string_to_int(char *str) {
-    int result = 0;
-    int i = 0;
-    int sign = 1;
-
-    // Skip leading whitespace
-    while (str[i] == ' ' || str[i] == '\t') {
-        i++;
-    }
-
-    // Check for sign
-    if (str[i] == '-') {
-        //sign = -1;
-        //i++;
-        Lprintf("No negative associations exist within this program!!\n");
-    } else if (str[i] == '+') {
-        i++;
-    }
-
-    // Process digits
-    while (str[i] != '\0') {
-	if (str[i] >= '0' && str[i] <= '9') {
-		result = result * 10 + (str[i] - '0');
-	}
-	else {
-		Lprintf("Invalid input: %s\n", str);
-		Lprintf("Please enter an integer.\n");
-		break;
-	}
-        i++;
-    }
-
-    return sign * result;
-}
-
-
 /*
     User programs in MT system only have separate private stack spaces.
     Unlike real processes, they do not have private data spaces,
@@ -65,7 +29,7 @@ uprogA(void)
   char *fname = "uprogA";
   char c, CR;               /* Don't use int, since we are using read() */
   int ret, mypid;
-  int iter = 0, nsyscalls = 0, nviews = 0, exit_code = 0;
+  int iter = 0, nsyscalls = 0, nviews = 0;
 
   mypid = do_getpid();
 
@@ -108,31 +72,13 @@ uprogA(void)
       ret = do_switch();
     } else if (c == 'q') {  /* syscall: _exit() */
       nsyscalls++;
-      exit_code = 0;
-      char exit_code_str[100];
-      Lprintf("Enter exit code: ");
-      Lgets(exit_code_str, sizeof(exit_code_str));
-      exit_code = string_to_int(exit_code_str);
-      Lprintf("\n");
-      ret = do_exit(exit_code);
+      ret = do_exit(0);
     } else if (c == 'z') { /* syscall: sleep() */
       nsyscalls++;
-      int event;
-      char event_str[100];
-      Lprintf("Enter event number: ");
-      Lgets(event_str, sizeof(event_str));
-      event = string_to_int(event_str);
-      Lprintf("\n");
-      ret = do_sleep(event);
+      ret = do_sleep(0);
     } else if (c == 'w') { /* syscall: wakeup() */
       nsyscalls++;
-      int event;
-      char event_str[100];
-      Lprintf("Enter event number: ");
-      Lgets(event_str, sizeof(event_str));
-      event = string_to_int(event_str);
-      Lprintf("\n");
-      ret = do_wakeup(event);
+      ret = do_wakeup(0);
     } else if (c == 't') { /* syscall: wait() */
       nsyscalls++;
       int status;
@@ -159,7 +105,7 @@ uprogB(void)
   char *fname = "uprogB";
   char c, CR;               /* Don't make these int! */
   int ret, mypid;
-  int max = 8, exit_code = 0;
+  int max = 8;
 
   mypid = do_getpid();
 
@@ -199,30 +145,11 @@ uprogB(void)
     } else if (c == 's') {  /* syscall: voluntary task switch */
       ret = do_switch();
     } else if (c == 'q') {  /* break and manually exit */
-      exit_code = 0;
-      char exit_code_str[100];
-      Lprintf("Enter exit code: ");
-      Lgets(exit_code_str, sizeof(exit_code_str));
-      exit_code = string_to_int(exit_code_str);
-      //ret = do_exit(exit_code);
-      Lprintf("\n");
       break;                /* Out of loop will do do_exit() */
     } else if (c == 'z') {  /* syscall: sleep() */
-      int event;
-      char event_str[100];
-      Lprintf("Enter event number: ");
-      Lgets(event_str, sizeof(event_str));
-      event = string_to_int(event_str);
-      ret = do_sleep(event);
-      Lprintf("\n");
+      ret = do_sleep(0);
     } else if (c == 'w') {  /* syscall: wakeup() */
-      int event;
-      char event_str[100];
-      Lprintf("Enter event number: ");
-      Lgets(event_str, sizeof(event_str));
-      event = string_to_int(event_str);
-      ret = do_wakeup(event);
-      Lprintf("\n");
+      ret = do_wakeup(0);
     } else if (c == 't') {  /* syscall: wait() */
       int status;
       ret = do_wait(&status);
@@ -236,7 +163,7 @@ uprogB(void)
   }
 
   Lprintf("\n!proc %ld (%s): GOODBYE!!!\n\n", mypid, fname);
-  do_exit(exit_code);
+  do_exit(0);
   return ret;   /* quiet gcc */
 
 }

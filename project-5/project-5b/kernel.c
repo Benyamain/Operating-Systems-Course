@@ -39,6 +39,10 @@ int do_switch(void);            /* task_switch() syscall (voluntary) */
 int do_getpid(void);            /* getpid() syscall */
 int do_exec(void *progaddr);    /* exec() syscall */
 
+int do_sleep(int event);
+int do_wakeup(int event);
+int do_wait(int *status);
+
 //
 // Convenience functions
 void printTaskQueues(void);     /* show running PROC and all queues */
@@ -136,7 +140,7 @@ kfork(void)
   p = dequeue(&freeList);
   if (!p) {
     Lprintf(" K: NO MORE PROC SLOT AVAILABLE!\n");
-    return(-1);
+    return -1;
   }
 
   /* Start setting up the new child process p */
@@ -285,8 +289,9 @@ int
 ksleep(int event)
 {
  	running->event = event;
-	//running->status = SLEEPING;
+	running->status = SLEEPING;
 	enqueue(&sleepList, running);
+	printList("     sleepList", sleepList);
 	return tswitch();
 }
 
@@ -304,6 +309,7 @@ kwakeup(int event)
 			dequeue(&sleepList);
 			tmp->status = READY;
 			enqueue(&readyQueue, tmp);
+			printList("     readyQueue", readyQueue);
 		}
 		else {
 			p = p->next;
@@ -326,6 +332,7 @@ kwait(int *status)
 				p->status = FREE;
 				p->priority = 0;
 				enqueue(&freeList, p);
+				printList("     freeList", freeList);
 
 				return p->pid;
 			}
@@ -383,7 +390,30 @@ do_exit(int exit_code)
     Lprintf(" K: P1 never dies\n");
     return -1;
   }
-  return kexit(exit_code);   // Journey of no return ...
+
+  char exit_code_str[100];
+  Lprintf("Enter exit code: ");
+  Lgets(exit_code_str, sizeof(exit_code_str));
+
+  int i = 0;
+  int valid_input = 1;
+  while (exit_code_str[i] != '\0') {
+    if (exit_code_str[i] < '0' || exit_code_str[i] > '9') {
+      valid_input = 0;
+      break;
+    }
+    i++;
+  }
+
+  if (valid_input) {
+    exit_code = Latoi(exit_code_str);
+    Lprintf("\n");
+    return kexit(exit_code);
+  } else {
+    Lprintf("Invalid input: %s\n", exit_code_str);
+    Lprintf("Please enter a valid integer.\n");
+    return -1;
+  }
 }
 
 /* getpid() syscall */
@@ -399,14 +429,58 @@ do_getpid(void)
 int
 do_sleep(int event)
 {
-	return ksleep(event);
+  char event_str[100];
+  Lprintf("Enter event number: ");
+  Lgets(event_str, sizeof(event_str));
+
+  int i = 0;
+  int valid_input = 1;
+  while (event_str[i] != '\0') {
+    if (event_str[i] < '0' || event_str[i] > '9') {
+      valid_input = 0;
+      break;
+    }
+    i++;
+  }
+
+  if (valid_input) {
+    event = Latoi(event_str);
+    Lprintf("\n");
+    return ksleep(event);
+  } else {
+    Lprintf("Invalid input: %s\n", event_str);
+    Lprintf("Please enter a valid integer.\n");
+    return -1;
+  }
 }
 
 /* system call wakeup() */
 int
 do_wakeup(int event)
 {
-	return kwakeup(event);
+  char event_str[100];
+  Lprintf("Enter event number: ");
+  Lgets(event_str, sizeof(event_str));
+
+  int i = 0;
+  int valid_input = 1;
+  while (event_str[i] != '\0') {
+    if (event_str[i] < '0' || event_str[i] > '9') {
+      valid_input = 0;
+      break;
+    }
+    i++;
+  }
+
+  if (valid_input) {
+    event = Latoi(event_str);
+    Lprintf("\n");
+    return kwakeup(event);
+  } else {
+    Lprintf("Invalid input: %s\n", event_str);
+    Lprintf("Please enter a valid integer.\n");
+    return -1;
+  }
 }
 
 /* system call wait() */
@@ -475,6 +549,7 @@ Lmain(int argc, char *bootparms[])
   queinit();        /* Initialize the process queues; create and run P0 */
   printList("     readyQueue", readyQueue);
   printList("     freeList", freeList);
+  printList("     sleepList", sleepList);
   Lprintf(" Continue startup: kfork a real user process into readyQueue ..\n");
   /* Standardized kfork() doesn't initialize the child (just clones
      from the parent), so if the newly forked P1 from P0 is to be
@@ -489,6 +564,7 @@ Lmain(int argc, char *bootparms[])
 
   printList("     readyQueue", readyQueue);
   printList("     freeList", freeList);
+  printList("     sleepList", sleepList);
 
   /* P0 will now go out and will never be seen again! */
   Lprintf(" P0 now being task-switched out via tswitch(), P1 coming in ..\n");
@@ -541,6 +617,7 @@ printTaskQueues(void)
 	Lprintf("     Now running -> [%ld %ld] (PID %ld, Priority %ld, PPID %ld)\n", do_getpid(), running->priority, do_getpid(), running->priority, running->ppid);
 	printList("     readyQueue", readyQueue);
 	printList("     freeList", freeList);
+	printList("     sleepList", sleepList);
 
 }
 
