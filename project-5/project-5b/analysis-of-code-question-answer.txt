@@ -75,3 +75,15 @@
 	* It seems that when the wait() syscall command is executed, multiple processes from the ready queue are being added to the sleep list, leaving only P1 as the current process and the ready queue empty.
 	* This behavior is unexpected and needs to be investigated and fixed. Review the implementation of the kwait() function and the handling of process states and queues to identify the root cause of the issue.
 	* Ensure that only the running process (the one executing the wait() syscall) is added to the sleep list, and that the other processes in the ready queue remain in their respective states.
+
+
+
+* fix the process state to be sleeping when we do the sleep sycall command
+
+* account for not allowing 0 when putting sth to sleep, wait, wakeup, etc
+
+* can p1 ever be put to sleep? or it should always be in the ready queue if it is not current running process??
+
+* condition to check not to put to sleep or wait syscall commands for the very last active process is not working
+
+* should status of something that uses wait syscall command use the STOPPED constant??
