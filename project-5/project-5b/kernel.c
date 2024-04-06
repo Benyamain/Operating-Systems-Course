@@ -228,6 +228,10 @@ kexit(int exit_code)
 	running->exit_code = exit_code;
 	running->status = ZOMBIE;
 
+	// delete later??
+	running->priority = ZOMBIE;
+	Lprintf("double check the zombie int: %d\n", running->status);
+
 	Lprintf(" K: -------------------------------------\n");
 	Lprintf(" K: proc %ld: TERMINATED!\n", running->pid);
 	Lprintf(" K: -------------------------------------\n");
@@ -258,6 +262,10 @@ kexit(int exit_code)
     	}
 
 	// Add the terminated process back to the freeList
+	Lprintf(" K: -------------------------------------\n");
+	Lprintf(" K: proc %ld: FREE!\n", running->pid);
+	Lprintf(" K: -------------------------------------\n");
+
     	running->status = FREE;
     	running->priority = 0;
     	enqueue(&freeList, running);
@@ -307,6 +315,12 @@ ksleep(int event)
 int
 ksleep(int event)
 {
+    // delete later??
+    if (event == 0) {
+        Lprintf("Invalid event number: 0. Wakeup request ignored.\n");
+        return -1;
+    }
+
     if (readyQueue == NULL && running->pid == 1) {
         Lprintf("Cannot execute sleep() syscall: No other processes in the ready queue.\n");
         return -1;
@@ -314,6 +328,14 @@ ksleep(int event)
 
     running->event = event;
     running->status = SLEEPING;
+
+    // delete later??
+    running->priority = SLEEPING;
+
+    Lprintf(" K: -------------------------------------\n");
+    Lprintf(" K: proc %ld: SLEEP!\n", running->pid);
+    Lprintf(" K: -------------------------------------\n");
+
     enqueue(&sleepList, running);
     printList("     sleepList", sleepList);
     return tswitch();
@@ -346,6 +368,7 @@ kwakeup(int event)
 int
 kwakeup(int event)
 {
+    // delete later??
     if (event == 0) {
         Lprintf("Invalid event number: 0. Wakeup request ignored.\n");
         return -1;
@@ -362,7 +385,15 @@ kwakeup(int event)
             } else {
                 prev->next = p->next;
             }
+	    Lprintf(" K: -------------------------------------\n");
+	    Lprintf(" K: proc %ld: AWAKE!\n", p->pid);
+	    Lprintf(" K: -------------------------------------\n");
+
             p->status = READY;
+
+	    // delete later??
+	    p->priority = READY;
+
             enqueue(&readyQueue, p);
             printList("     readyQueue", readyQueue);
             p = p->next;
@@ -411,6 +442,10 @@ kwait(int *status)
     while (1) {
         for (p = proc; p < &proc[NPROC]; p++) {
             if (p->ppid == running->pid && p->status == ZOMBIE) {
+		Lprintf(" K: -------------------------------------\n");
+		Lprintf(" K: proc %ld: FREE!\n", p->pid);
+		Lprintf(" K: -------------------------------------\n");
+
                 *status = p->exit_code;
                 p->status = FREE;
                 p->priority = 0;
@@ -420,7 +455,11 @@ kwait(int *status)
             }
         }
 
-        running->status = SLEEPING;
+        Lprintf(" K: -------------------------------------\n");
+	Lprintf(" K: proc %ld: SLEEP!\n", running->pid);
+	Lprintf(" K: -------------------------------------\n");
+
+	running->status = SLEEPING;
         enqueue(&sleepList, running);
         printList("     sleepList", sleepList);
         tswitch();
