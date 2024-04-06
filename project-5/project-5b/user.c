@@ -14,28 +14,40 @@ int uprogA(void);
 int uprogB(void);
 
 int string_to_int(char *str) {
-  int result = 0;
-  int i = 0;
-  int sign = 1;
+    int result = 0;
+    int i = 0;
+    int sign = 1;
 
-  if (str[0] == '-') {
-    //sign = -1;
-    //i = 1;
-     Lprintf("Not possible to have a negative association in the program!!\n\n");
-
-  }
-
-  while (str[i] != '\0') {
-    if (str[i] >= '0' && str[i] <= '9') {
-      result = result * 10 + (str[i] - '0');
-    } else {
-      break;
+    // Skip leading whitespace
+    while (str[i] == ' ' || str[i] == '\t') {
+        i++;
     }
-    i++;
-  }
 
-  return sign * result;
+    // Check for sign
+    if (str[i] == '-') {
+        //sign = -1;
+        //i++;
+        Lprintf("No negative associations exist within this program!!\n");
+    } else if (str[i] == '+') {
+        i++;
+    }
+
+    // Process digits
+    while (str[i] != '\0') {
+	if (str[i] >= '0' && str[i] <= '9') {
+		result = result * 10 + (str[i] - '0');
+	}
+	else {
+		Lprintf("Invalid input: %s\n", str);
+		Lprintf("Please enter an integer.\n");
+		break;
+	}
+        i++;
+    }
+
+    return sign * result;
 }
+
 
 /*
     User programs in MT system only have separate private stack spaces.
@@ -97,7 +109,7 @@ uprogA(void)
     } else if (c == 'q') {  /* syscall: _exit() */
       nsyscalls++;
       exit_code = 0;
-      char exit_code_str[10];
+      char exit_code_str[100];
       Lprintf("Enter exit code: ");
       Lgets(exit_code_str, sizeof(exit_code_str));
       exit_code = string_to_int(exit_code_str);
@@ -106,7 +118,7 @@ uprogA(void)
     } else if (c == 'z') { /* syscall: sleep() */
       nsyscalls++;
       int event;
-      char event_str[10];
+      char event_str[100];
       Lprintf("Enter event number: ");
       Lgets(event_str, sizeof(event_str));
       event = string_to_int(event_str);
@@ -115,7 +127,7 @@ uprogA(void)
     } else if (c == 'w') { /* syscall: wakeup() */
       nsyscalls++;
       int event;
-      char event_str[10];
+      char event_str[100];
       Lprintf("Enter event number: ");
       Lgets(event_str, sizeof(event_str));
       event = string_to_int(event_str);
@@ -188,7 +200,7 @@ uprogB(void)
       ret = do_switch();
     } else if (c == 'q') {  /* break and manually exit */
       exit_code = 0;
-      char exit_code_str[10];
+      char exit_code_str[100];
       Lprintf("Enter exit code: ");
       Lgets(exit_code_str, sizeof(exit_code_str));
       exit_code = string_to_int(exit_code_str);
@@ -197,7 +209,7 @@ uprogB(void)
       break;                /* Out of loop will do do_exit() */
     } else if (c == 'z') {  /* syscall: sleep() */
       int event;
-      char event_str[10];
+      char event_str[100];
       Lprintf("Enter event number: ");
       Lgets(event_str, sizeof(event_str));
       event = string_to_int(event_str);
@@ -205,7 +217,7 @@ uprogB(void)
       Lprintf("\n");
     } else if (c == 'w') {  /* syscall: wakeup() */
       int event;
-      char event_str[10];
+      char event_str[100];
       Lprintf("Enter event number: ");
       Lgets(event_str, sizeof(event_str));
       event = string_to_int(event_str);
