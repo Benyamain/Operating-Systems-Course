@@ -317,7 +317,7 @@ ksleep(int event)
 {
     // delete later??
     if (event == 0) {
-        Lprintf("Invalid event number: 0. Wakeup request ignored.\n");
+        Lprintf("Invalid event number: 0. Sleep request ignored.\n");
         return -1;
     }
 
@@ -460,6 +460,10 @@ kwait(int *status)
 	Lprintf(" K: -------------------------------------\n");
 
 	running->status = SLEEPING;
+
+	// delete later??
+	running->priority = SLEEPING;
+
         enqueue(&sleepList, running);
         printList("     sleepList", sleepList);
         tswitch();

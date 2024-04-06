@@ -87,3 +87,7 @@
 * condition to check not to put to sleep or wait syscall commands for the very last active process is not working
 
 * should status of something that uses wait syscall command use the STOPPED constant??
+
+* not traversing through the sleep list to be able to wakeup any process in there?? do we need to do that??
+
+* the wake syscall command does not wake those processes put to sleep by the wait syscall command, using their pids to wake them is not working  ...
