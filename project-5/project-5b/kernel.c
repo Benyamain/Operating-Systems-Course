@@ -250,8 +250,9 @@ kexit(int exit_code)
     	enqueue(&freeList, running);
 
 	printList("     freeList", freeList);
+	Lprintf(" K: Switching task via tswitch() ..\n");
 
-  	// Schedule the next process
+  	// Call the task switcher to select the next process to run
 	return tswitch();
 }
 

@@ -53,7 +53,7 @@ uprogA(void)
   char *fname = "uprogA";
   char c, CR;               /* Don't use int, since we are using read() */
   int ret, mypid;
-  int iter = 0, nsyscalls = 0, nviews = 0;
+  int iter = 0, nsyscalls = 0, nviews = 0, exit_code = 0;
 
   mypid = do_getpid();
 
@@ -96,7 +96,7 @@ uprogA(void)
       ret = do_switch();
     } else if (c == 'q') {  /* syscall: _exit() */
       nsyscalls++;
-      int exit_code = 0;
+      exit_code = 0;
       char exit_code_str[10];
       Lprintf("Enter exit code: ");
       Lgets(exit_code_str, sizeof(exit_code_str));
@@ -147,7 +147,7 @@ uprogB(void)
   char *fname = "uprogB";
   char c, CR;               /* Don't make these int! */
   int ret, mypid;
-  int max = 8;
+  int max = 8, exit_code = 0;
 
   mypid = do_getpid();
 
@@ -187,14 +187,14 @@ uprogB(void)
     } else if (c == 's') {  /* syscall: voluntary task switch */
       ret = do_switch();
     } else if (c == 'q') {  /* break and manually exit */
-      int exit_code = 0;
+      exit_code = 0;
       char exit_code_str[10];
       Lprintf("Enter exit code: ");
       Lgets(exit_code_str, sizeof(exit_code_str));
       exit_code = string_to_int(exit_code_str);
-      ret = do_exit(exit_code);
+      //ret = do_exit(exit_code);
       Lprintf("\n");
-      //break;                /* Out of loop will do do_exit() */
+      break;                /* Out of loop will do do_exit() */
     } else if (c == 'z') {  /* syscall: sleep() */
       int event;
       char event_str[10];
@@ -224,7 +224,7 @@ uprogB(void)
   }
 
   Lprintf("\n!proc %ld (%s): GOODBYE!!!\n\n", mypid, fname);
-  //do_exit();
+  do_exit(exit_code);
   return ret;   /* quiet gcc */
 
 }
