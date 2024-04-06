@@ -24,8 +24,8 @@ typedef struct proc {
     long  priority;         /* scheduling priority       struct offset 32   */
     long  uctx[CSIZE];      /* saved CPU regs (context)  struct offset 40   */
     long  ustack[SSIZE];    /* processs stack 64K        struct offset 296  */
-	int event;	/* event the process is waiting for  */
-	int exit_code;	/* exit code of the process  */
+    int event;		    /* event the process is waiting for  */
+    int exit_code;	    /* exit code of the process  */
 } PROC;
 /* Total NPROC structs, each of size 5 + CSIZE + SSIZE 64-bit words  */
 /* User stack spans the address range &ustack[0] .. &ustack[SSIZE - 1] */

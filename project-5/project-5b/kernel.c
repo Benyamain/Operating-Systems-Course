@@ -220,7 +220,7 @@ kexec(void *progaddr)
 /******************************************
   kernel routine kexit() (no zombie)
 *******************************************/
-/* Terminates the running process and wakes up its parent if waiting */
+/* Sets the exit code, changes the process status to ZOMBIE, wakes up the parent if it's waiting, handles orphaned processes by making P1 their parent, and wakes up P1 if the exiting process has children. */
 int
 kexit(int exit_code)
 {
@@ -247,6 +247,15 @@ kexit(int exit_code)
 			p->ppid = 1;
 		}
 	}
+
+	// Wake up P1 if the exiting process has children
+    	for (p = proc; p < &proc[NPROC]; p++) {
+        	if (p->ppid == running->pid) {
+            		kwakeup(1);
+			printList("     readyQueue", readyQueue);
+            		break;
+        	}
+    	}
 
 	// Add the terminated process back to the freeList
     	running->status = FREE;
@@ -284,7 +293,7 @@ do_kfork(void)
   return child;
 }
 
-/* Puts the running process to sleep waiting for a specific event */
+/* Sets the event, changes the process status to SLEEPING, enqueues the process into the sleepList, and calls tswitch() */
 int
 ksleep(int event)
 {
@@ -295,7 +304,7 @@ ksleep(int event)
 	return tswitch();
 }
 
-/* Wakes up all processes waiting for a specific event  */\
+/* Iterates through the sleepList, wakes up processes waiting for the specified event, and enqueues them into the readyQueue */
 int
 kwakeup(int event)
 {
@@ -319,7 +328,7 @@ kwakeup(int event)
 	return 0;
 }
 
-/* Waits for a child process to exit and retrieves its exit status  */
+/* Waits for a child process to exit and retrieves its exit status, frees the child process, and returns the child's PID. */
 int
 kwait(int *status)
 {
@@ -391,28 +400,47 @@ do_exit(int exit_code)
     return -1;
   }
 
-  char exit_code_str[100];
+  char str[100];
   Lprintf("Enter exit code: ");
-  Lgets(exit_code_str, sizeof(exit_code_str));
+  Lgets(str, sizeof(str));
 
-  int i = 0;
-  int valid_input = 1;
-  while (exit_code_str[i] != '\0') {
-    if (exit_code_str[i] < '0' || exit_code_str[i] > '9') {
-      valid_input = 0;
-      break;
-    }
-    i++;
+  // Remove trailing newline character
+  int len = Lstrlen(str);
+  if (len > 0 && str[len - 1] == '\n') {
+      str[len - 1] = '\0';
   }
 
-  if (valid_input) {
-    exit_code = Latoi(exit_code_str);
-    Lprintf("\n");
-    return kexit(exit_code);
+  // Trim leading and trailing whitespace
+  char *start = str;
+  while (*start == ' ' || *start == '\t') {
+      start++;
+  }
+
+  char *end = start + Lstrlen(start) - 1;
+  while (end > start && (*end == ' ' || *end == '\t')) {
+      end--;
+  }
+  *(end + 1) = '\0';
+
+  // Validate input
+  int i = 0;
+  int valid_input = 1;
+  while (start[i] != '\0') {
+      if (start[i] < '0' || start[i] > '9') {
+          valid_input = 0;
+          break;
+      }
+      i++;
+  }
+
+  if (valid_input && Lstrlen(start) > 0) {
+      exit_code = Latoi(start);
+      Lprintf("\n");
+      return kexit(exit_code);
   } else {
-    Lprintf("Invalid input: %s\n", exit_code_str);
-    Lprintf("Please enter a valid integer.\n");
-    return -1;
+      Lprintf("Invalid input: %s\n", str);
+      Lprintf("Please enter a valid integer.\n");
+      return -1;
   }
 }
 
@@ -429,28 +457,48 @@ do_getpid(void)
 int
 do_sleep(int event)
 {
-  char event_str[100];
-  Lprintf("Enter event number: ");
-  Lgets(event_str, sizeof(event_str));
 
-  int i = 0;
-  int valid_input = 1;
-  while (event_str[i] != '\0') {
-    if (event_str[i] < '0' || event_str[i] > '9') {
-      valid_input = 0;
-      break;
-    }
-    i++;
+  char str[100];
+  Lprintf("Enter event number: ");
+  Lgets(str, sizeof(str));
+
+  // Remove trailing newline character
+  int len = Lstrlen(str);
+  if (len > 0 && str[len - 1] == '\n') {
+      str[len - 1] = '\0';
   }
 
-  if (valid_input) {
-    event = Latoi(event_str);
-    Lprintf("\n");
-    return ksleep(event);
+  // Trim leading and trailing whitespace
+  char *start = str;
+  while (*start == ' ' || *start == '\t') {
+      start++;
+  }
+
+  char *end = start + Lstrlen(start) - 1;
+  while (end > start && (*end == ' ' || *end == '\t')) {
+      end--;
+  }
+  *(end + 1) = '\0';
+
+  // Validate input
+  int i = 0;
+  int valid_input = 1;
+  while (start[i] != '\0') {
+      if (start[i] < '0' || start[i] > '9') {
+          valid_input = 0;
+          break;
+      }
+      i++;
+  }
+
+  if (valid_input && Lstrlen(start) > 0) {
+      event = Latoi(start);
+      Lprintf("\n");
+      return ksleep(event);
   } else {
-    Lprintf("Invalid input: %s\n", event_str);
-    Lprintf("Please enter a valid integer.\n");
-    return -1;
+      Lprintf("Invalid input: %s\n", str);
+      Lprintf("Please enter a valid integer.\n");
+      return -1;
   }
 }
 
@@ -458,28 +506,48 @@ do_sleep(int event)
 int
 do_wakeup(int event)
 {
-  char event_str[100];
-  Lprintf("Enter event number: ");
-  Lgets(event_str, sizeof(event_str));
 
-  int i = 0;
-  int valid_input = 1;
-  while (event_str[i] != '\0') {
-    if (event_str[i] < '0' || event_str[i] > '9') {
-      valid_input = 0;
-      break;
-    }
-    i++;
+  char str[100];
+  Lprintf("Enter event number: ");
+  Lgets(str, sizeof(str));
+
+  // Remove trailing newline character
+  int len = Lstrlen(str);
+  if (len > 0 && str[len - 1] == '\n') {
+      str[len - 1] = '\0';
   }
 
-  if (valid_input) {
-    event = Latoi(event_str);
-    Lprintf("\n");
-    return kwakeup(event);
+  // Trim leading and trailing whitespace
+  char *start = str;
+  while (*start == ' ' || *start == '\t') {
+      start++;
+  }
+
+  char *end = start + Lstrlen(start) - 1;
+  while (end > start && (*end == ' ' || *end == '\t')) {
+      end--;
+  }
+  *(end + 1) = '\0';
+
+  // Validate input
+  int i = 0;
+  int valid_input = 1;
+  while (start[i] != '\0') {
+      if (start[i] < '0' || start[i] > '9') {
+          valid_input = 0;
+          break;
+      }
+      i++;
+  }
+
+  if (valid_input && Lstrlen(start) > 0) {
+      event = Latoi(start);
+      Lprintf("\n");
+      return kwakeup(event);
   } else {
-    Lprintf("Invalid input: %s\n", event_str);
-    Lprintf("Please enter a valid integer.\n");
-    return -1;
+      Lprintf("Invalid input: %s\n", str);
+      Lprintf("Please enter a valid integer.\n");
+      return -1;
   }
 }
 
