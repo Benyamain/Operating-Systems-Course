@@ -34,7 +34,7 @@ int uprogB(void);
 //
 // Syscalls
 int do_kfork(void);             /* fork() syscall NOW STANDARDIZED! */
-int do_exit(void);              /* exit() syscall */
+int do_exit(int exit_code);              /* exit() syscall */
 int do_switch(void);            /* task_switch() syscall (voluntary) */
 int do_getpid(void);            /* getpid() syscall */
 int do_exec(void *progaddr);    /* exec() syscall */
@@ -46,7 +46,7 @@ void printTaskQueues(void);     /* show running PROC and all queues */
 // Kernel implementation routines for syscalls and other functions
 int initctx(PROC *p, void *progaddr);   /* Initialize a PROC context area */
 int kfork(void);                /* kernel rouine for fork() STANDARDIZED! */
-int kexit(void);                /* kernel routine for _exit() */
+int kexit(int exit_code);                /* kernel routine for _exit() */
 int kexec(void *progaddr);      /* kernel exec */
 
 int ksleep(int event);
@@ -177,12 +177,12 @@ kfork(void)
   */
 
 	/* Copy child's stack and context from the parent */
-	//Lmemcpy(p->ustack, running->ustack, sizeof(p->ustack));
-	//Lmemcpy(p->uctx, running->uctx, sizeof(p->uctx));
+	Lmemcpy(p->ustack, running->ustack, sizeof(p->ustack));
+	Lmemcpy(p->uctx, running->uctx, sizeof(p->uctx));
 
 	/* Fix up the child's context */
-	//p->uctx[2] = (long) &(p->ustack[SSIZE - 1]);	// Update sp in the pcb that holds register x2
-	//p->uctx[10] = 0;	// Return value for the child (a0) is register x10
+	p->uctx[2] = (long) &(p->ustack[SSIZE - 1]);	// Update sp in the pcb that holds register x2
+	p->uctx[10] = 0;	// Return value for the child (a0) is register x10
 
 
   /* Enter p (child) into readyQueue */
@@ -198,13 +198,13 @@ kexec(void *progaddr)
 
   /* Add YOUR CODE here! */
 	/* Re-initialize the current process's context */
-	//initctx(running, progaddr);
+	initctx(running, progaddr);
 
 	/* Transfer control to the new program */
-	//runctx();
+	runctx();
 
 	/* Should not be reached */
-	//return -1;
+	return -1;
 
 }
 
@@ -212,7 +212,7 @@ kexec(void *progaddr)
   kernel routine kexit() (no zombie)
 *******************************************/
 /* Terminates the running process and wakes up its parent if waiting */
-int
+/*int
 kexit(void)
 {
   running->status = FREE;
@@ -226,24 +226,39 @@ kexit(void)
 
   Lprintf(" K: Switching task via tswitch() ..\n");
   return tswitch();                         // Call task switcher
-}
+}*/
 
 /* Terminates the running process and wakes up its parent if waiting */
-/*int
-kexit(int exitCode)
+int
+kexit(int exit_code)
 {
-	running->exitCode = exitCode;
+	PROC *p;
+	running->exit_code = exit_code;
 	running->status = ZOMBIE;
+
 	Lprintf(" K: -------------------------------------\n");
 	Lprintf(" K: proc %ld: TERMINATED!\n", running->pid);
 	Lprintf(" K: -------------------------------------\n");
 	printList("     freeList", freeList);
 
 	// Wake up parent if it's waiting
-  	kwakeup(running->ppid);
+	for (p = proc; p < &proc[NPROC]; p++) {
+		if (p->pid == running->ppid && p->status == SLEEPING) {
+			p->status = READY;
+			enqueue(&readyQueue, p);
+			break;
+		}
+	}
+
+	// Make sure P1 becomes the parent of orphaned process
+	for (p = proc; p < &proc[NPROC]; p++) {
+		if (p->ppid == running->pid) {
+			p->ppid = 1;
+		}
+	}
 
   	return tswitch();
-}*/
+}
 
 /* system call fork() */
 int
@@ -270,17 +285,17 @@ do_kfork(void)
 }
 
 /* Puts the running process to sleep waiting for a specific event */
-/*int
+int
 ksleep(int event)
 {
  	running->event = event;
 	//running->status = SLEEPING;
 	enqueue(&sleepList, running);
 	return tswitch();
-}*/
+}
 
 /* Wakes up all processes waiting for a specific event  */\
-/*int
+int
 kwakeup(int event)
 {
 	PROC *p, *tmp;
@@ -291,6 +306,7 @@ kwakeup(int event)
 			tmp = p;
 			p = p->next;
 			dequeue(&sleepList);
+			tmp->status = READY;
 			enqueue(&readyQueue, tmp);
 		}
 		else {
@@ -299,10 +315,10 @@ kwakeup(int event)
 	}
 
 	return 0;
-}*/
+}
 
 /* Waits for a child process to exit and retrieves its exit status  */
-/*int
+int
 kwait(int *status)
 {
 	PROC *p;
@@ -321,7 +337,7 @@ kwait(int *status)
 
 		ksleep(running->pid);	// Use process ID as the event for waiting
 	}
-}*/
+}
 
 /* system call exec() */
 int
@@ -365,13 +381,13 @@ do_switch(void)
 
 /* _exit() system call */
 int
-do_exit(void)
+do_exit(int exit_code)
 {
-  if (running->pid == 1){
+  if (running->pid == 1) {
     Lprintf(" K: P1 never dies\n");
     return -1;
   }
-  return kexit();   // Journey of no return ...
+  return kexit(exit_code);   // Journey of no return ...
 }
 
 /* getpid() syscall */
@@ -384,25 +400,25 @@ do_getpid(void)
 }
 
 /* system call sleep() */
-/*int
+int
 do_sleep(int event)
 {
 	return ksleep(event);
-}*/
+}
 
 /* system call wakeup() */
-/*int
+int
 do_wakeup(int event)
 {
 	return kwakeup(event);
-}*/
+}
 
 /* system call wait() */
-/*int
+int
 do_wait(int *status)
 {
 	return kwait(status);
-}*/
+}
 
 /********************************************************************
   Initialization routine for the MT system OS kernel:
@@ -430,7 +446,7 @@ queinit(void)
   readyQueue = (PROC *) 0;      /* The readyQueue is empty */
 
 	/* Set head for the sleep queue */
-	//sleepList = (PROC *) 0;
+	sleepList = (PROC *) 0;
 
   /* Create P0 as the initial running process */
   p = dequeue(&freeList);       /* This p is P0 */

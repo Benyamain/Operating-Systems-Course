@@ -13,6 +13,30 @@
 int uprogA(void);
 int uprogB(void);
 
+int string_to_int(char *str) {
+  int result = 0;
+  int i = 0;
+  int sign = 1;
+
+  if (str[0] == '-') {
+    //sign = -1;
+    //i = 1;
+     Lprintf("Not possible to have a negative association in the program!!\n\n");
+
+  }
+
+  while (str[i] != '\0') {
+    if (str[i] >= '0' && str[i] <= '9') {
+      result = result * 10 + (str[i] - '0');
+    } else {
+      break;
+    }
+    i++;
+  }
+
+  return sign * result;
+}
+
 /*
     User programs in MT system only have separate private stack spaces.
     Unlike real processes, they do not have private data spaces,
@@ -42,7 +66,7 @@ uprogA(void)
     Lprintf("proc %ld (%s) running:  Iteration %d, #syscalls=%d, #views=%d\n",
         mypid, fname, iter, nsyscalls, nviews);
     // Observe how local variables change for various running processes
-    Lprintf("enter a key [f|s|q|a|b (syscall) or v (view tasks)] : ");
+    Lprintf("enter a key [f|s|q|a|b|z|w|t (syscall) or v (view tasks)] : ");
     // Read a line, and store the first non-space character in c
     c = ' ';
     while (1 == 1) {
@@ -72,13 +96,42 @@ uprogA(void)
       ret = do_switch();
     } else if (c == 'q') {  /* syscall: _exit() */
       nsyscalls++;
-      ret = do_exit();
+      int exit_code = 0;
+      char exit_code_str[10];
+      Lprintf("Enter exit code: ");
+      Lgets(exit_code_str, sizeof(exit_code_str));
+      exit_code = string_to_int(exit_code_str);
+      Lprintf("\n");
+      ret = do_exit(exit_code);
+    } else if (c == 'z') { /* syscall: sleep() */
+      nsyscalls++;
+      int event;
+      char event_str[10];
+      Lprintf("Enter event number: ");
+      Lgets(event_str, sizeof(event_str));
+      event = string_to_int(event_str);
+      Lprintf("\n");
+      ret = do_sleep(event);
+    } else if (c == 'w') { /* syscall: wakeup() */
+      nsyscalls++;
+      int event;
+      char event_str[10];
+      Lprintf("Enter event number: ");
+      Lgets(event_str, sizeof(event_str));
+      event = string_to_int(event_str);
+      Lprintf("\n");
+      ret = do_wakeup(event);
+    } else if (c == 't') { /* syscall: wait() */
+      nsyscalls++;
+      int status;
+      ret = do_wait(&status);
+      Lprintf("Child process exited with status: %d\n", status);
     } else if (c == 'v') {  /* View all running and queued tasks */
       nviews++;
       printTaskQueues();
     } else {  /* Unknown key entered by user */
       Lprintf(" Usage:  Enter "
-        "f (fork) | s (switch task) | q (exit) | a,b (exec) | v (view)\n");
+        "f (fork) | s (switch task) | q (exit) | a,b (exec) | z (sleep) | w (wakeup) | t (wait) | v (view)\n");
     }
   }
   return ret;   /* quiet gcc */
@@ -107,7 +160,7 @@ uprogB(void)
     Lprintf("~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
     Lprintf(":)  HELLO WORLD  :)  RUN %d!\n", k+1);
     Lprintf("~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-    Lprintf("enter a key [f|s|q|a|b (syscall) or v (view tasks)] : ");
+    Lprintf("enter a key [f|s|q|a|b|z|w|t (syscall) or v (view tasks)] : ");
     // Read a line, and store the first non-space character in c
     c = ' ';
     while (1 == 1) {
@@ -134,17 +187,44 @@ uprogB(void)
     } else if (c == 's') {  /* syscall: voluntary task switch */
       ret = do_switch();
     } else if (c == 'q') {  /* break and manually exit */
-      break;                /* Out of loop will do do_exit() */
+      int exit_code = 0;
+      char exit_code_str[10];
+      Lprintf("Enter exit code: ");
+      Lgets(exit_code_str, sizeof(exit_code_str));
+      exit_code = string_to_int(exit_code_str);
+      ret = do_exit(exit_code);
+      Lprintf("\n");
+      //break;                /* Out of loop will do do_exit() */
+    } else if (c == 'z') {  /* syscall: sleep() */
+      int event;
+      char event_str[10];
+      Lprintf("Enter event number: ");
+      Lgets(event_str, sizeof(event_str));
+      event = string_to_int(event_str);
+      ret = do_sleep(event);
+      Lprintf("\n");
+    } else if (c == 'w') {  /* syscall: wakeup() */
+      int event;
+      char event_str[10];
+      Lprintf("Enter event number: ");
+      Lgets(event_str, sizeof(event_str));
+      event = string_to_int(event_str);
+      ret = do_wakeup(event);
+      Lprintf("\n");
+    } else if (c == 't') {  /* syscall: wait() */
+      int status;
+      ret = do_wait(&status);
+      Lprintf("Child process exited with status: %d\n", status);
     } else if (c == 'v') {  /* View all running and queued tasks */
       printTaskQueues();
     } else {  /* Unknown key entered by user */
       Lprintf(" Usage:  Enter "
-        "f (fork) | s (switch task) | q (exit) | a,b (exec) | v (view)\n");
+        "f (fork) | s (switch task) | q (exit) | a,b (exec) | z (sleep) | w (wakeup) | t (wait) | v (view)\n");
     }
   }
 
   Lprintf("\n!proc %ld (%s): GOODBYE!!!\n\n", mypid, fname);
-  do_exit();
+  //do_exit();
   return ret;   /* quiet gcc */
 
 }
