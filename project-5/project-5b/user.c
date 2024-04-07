@@ -13,6 +13,8 @@
 int uprogA(void);
 int uprogB(void);
 
+int MAX_REACHED = 0;
+
 /*
     User programs in MT system only have separate private stack spaces.
     Unlike real processes, they do not have private data spaces,
@@ -82,8 +84,8 @@ uprogA(void)
     } else if (c == 't') { /* syscall: wait() */
       nsyscalls++;
       int status;
-      ret = do_wait(&status);
       Lprintf("Child process exited with status: %d\n", status);
+      ret = do_wait(&status);
     } else if (c == 'v') {  /* View all running and queued tasks */
       nviews++;
       printTaskQueues();
@@ -152,13 +154,17 @@ uprogB(void)
       ret = do_wakeup(0);
     } else if (c == 't') {  /* syscall: wait() */
       int status;
-      ret = do_wait(&status);
       Lprintf("Child process exited with status: %d\n", status);
+      ret = do_wait(&status);
     } else if (c == 'v') {  /* View all running and queued tasks */
       printTaskQueues();
     } else {  /* Unknown key entered by user */
       Lprintf(" Usage:  Enter "
         "f (fork) | s (switch task) | q (exit) | a,b (exec) | z (sleep) | w (wakeup) | t (wait) | v (view)\n");
+    }
+
+    if (k == 7) {
+      MAX_REACHED = 1;
     }
   }
 

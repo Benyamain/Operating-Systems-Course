@@ -35,6 +35,7 @@ PROC *running;      /* Ptr to PCB of current running process (at most one) */
 PROC *freeList;     /* Ptr to head of the queue (linked list) of free PIDs */
 PROC *readyQueue;   /* Ptr to head of the queue of ready to run processes */
 PROC *sleepList; 	/* Ptr to head of the queue of sleeping processes */
+extern int MAX_REACHED;	/* from uprogB() */
 
 /* File queue.c defines the scheduler's queue-management routines:
     int enqueue(PROC **, PROC *);       // Scheduler enqueueing routine
@@ -250,7 +251,6 @@ kexit(int exit_code)
 
 	// Wake up parent if it's waiting for this specific child
 	for (p = proc; p < &proc[NPROC]; p++) {
-		// delete third condition later??
 		if (p->pid == running->ppid && p->status == SLEEPING && p->event == running->pid) {
 			Lprintf(" K: -------------------------------------\n");
 			Lprintf(" K: proc %ld: PARENT AWAKEN AND READY!\n", p->pid);
@@ -310,12 +310,6 @@ do_kfork(void)
 int
 ksleep(int event)
 {
-    // delete later??
-    /*if (event == 0) {
-        Lprintf("Invalid event number: 0. Sleep request ignored.\n");
-        return -1;
-    }*/
-
     if (running->pid == 1) {
         Lprintf("P1 cannot be put to sleep indefinitely.\n");
         return -1;
@@ -338,12 +332,6 @@ ksleep(int event)
 int
 kwakeup(int event)
 {
-    // delete later??
-    /*if (event == 0) {
-        Lprintf("Invalid event number: 0. Wakeup request ignored.\n");
-        return -1;
-    }*/
-
     PROC *p, *prev;
     p = sleepList;
     prev = NULL;
@@ -361,7 +349,6 @@ kwakeup(int event)
 	    Lprintf(" K: -------------------------------------\n");
 
             p->status = READY;
-	    // delete later??
 	    p->priority = 1;
             enqueue(&readyQueue, p);
             printList("     readyQueue", readyQueue);
@@ -497,7 +484,7 @@ do_exit(int exit_code)
       i++;
   }
 
-  if (valid_input && Lstrlen(start) > 0) {
+  if ((valid_input && Lstrlen(start) > 0) || MAX_REACHED) {
       exit_code = Latoi(start);
       Lprintf("\n");
       return kexit(exit_code);
