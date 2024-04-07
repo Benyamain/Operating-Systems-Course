@@ -230,7 +230,6 @@ kexit(int exit_code)
 
 	// delete later??
 	running->priority = ZOMBIE;
-	Lprintf("double check the zombie int: %d\n", running->status);
 
 	Lprintf(" K: -------------------------------------\n");
 	Lprintf(" K: proc %ld: TERMINATED AND FREE!\n", running->pid);
