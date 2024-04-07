@@ -271,11 +271,11 @@ kexit(int exit_code)
 	}
 
     	// Add the terminated process back to the freeList
-	/*running->status = FREE;
+	running->status = FREE;
     	running->priority = 0;
     	enqueue(&freeList, running);
 
-	printList("     freeList", freeList);*/
+	printList("     freeList", freeList);
 	Lprintf(" K: Switching task via tswitch() ..\n");
 
   	// Call the task switcher to select the next process to run
