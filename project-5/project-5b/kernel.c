@@ -6,6 +6,26 @@
   The user program(s) are in file user.c.
 *****************************************************************************/
 
+/*
+
+ __  __ _______   __  __       _ _   _ _            _    _
+|  \/  |__   __| |  \/  |     | | | (_) |          | |  (_)
+| \  / |  | |    | \  / |_   _| | |_ _| |_ __ _ ___| | ___ _ __   __ _
+| |\/| |  | |    | |\/| | | | | | __| | __/ _` / __| |/ / | '_ \ / _` |
+| |  | |  | |    | |  | | |_| | | |_| | || (_| \__ \   <| | | | | (_| |
+|_|  |_|  |_|    |_|  |_|\__,_|_|\__|_|\__\__,_|___/_|\_\_|_| |_|\__, |
+                                                                  __/ |
+                                                                 |___/
+  _____           _
+ / ____|         | |
+| (___  _   _ ___| |_ ___ _ __ __
+ \___ \| | | / __| __/ _ \ '_ ` _ \
+ ____) | |_| \__ \ ||  __/ | | | | |
+|_____/ \__, |___/\__\___|_| |_| |_|
+         __/ |
+        |___/
+*/
+
 #include "Llibc/Llibc.h"
 #include "type.h"   /* Defines struct PROC == Process Control Block (PCB) */
 
@@ -14,7 +34,6 @@ PROC proc[NPROC];   /* Allocate storage for NPROC PCBs (the process table) */
 PROC *running;      /* Ptr to PCB of current running process (at most one) */
 PROC *freeList;     /* Ptr to head of the queue (linked list) of free PIDs */
 PROC *readyQueue;   /* Ptr to head of the queue of ready to run processes */
-
 PROC *sleepList; 	/* Ptr to head of the queue of sleeping processes */
 
 /* File queue.c defines the scheduler's queue-management routines:
@@ -38,7 +57,6 @@ int do_exit(int exit_code);              /* exit() syscall */
 int do_switch(void);            /* task_switch() syscall (voluntary) */
 int do_getpid(void);            /* getpid() syscall */
 int do_exec(void *progaddr);    /* exec() syscall */
-
 int do_sleep(int event);
 int do_wakeup(int event);
 int do_wait(int *status);
@@ -52,7 +70,6 @@ int initctx(PROC *p, void *progaddr);   /* Initialize a PROC context area */
 int kfork(void);                /* kernel rouine for fork() STANDARDIZED! */
 int kexit(int exit_code);                /* kernel routine for _exit() */
 int kexec(void *progaddr);      /* kernel exec */
-
 int ksleep(int event);
 int kwakeup(int event);
 int kwait(int *status);
@@ -205,15 +222,14 @@ int
 kexec(void *progaddr)
 {
 
-  /* Add YOUR CODE here! */
-	/* Re-initialize the current process's context */
-	initctx(running, progaddr);
+  /* Re-initialize the current process's context */
+  initctx(running, progaddr);
 
-	/* Transfer control to the new program */
-	runctx();
+  /* Transfer control to the new program */
+  runctx();
 
-	/* Should not be reached */
-	return -1;
+  /* Should not be reached */
+  return -1;
 
 }
 
@@ -228,25 +244,20 @@ kexit(int exit_code)
 	running->exit_code = exit_code;
 	running->status = ZOMBIE;
 
-	// delete later??
-	running->priority = ZOMBIE;
-
 	Lprintf(" K: -------------------------------------\n");
 	Lprintf(" K: proc %ld: TERMINATED AND FREE!\n", running->pid);
 	Lprintf(" K: -------------------------------------\n");
 
-	// Wake up parent if it's waiting
+	// Wake up parent if it's waiting for this specific child
 	for (p = proc; p < &proc[NPROC]; p++) {
-		if (p->pid == running->ppid && p->status == SLEEPING) {
+		// delete third condition later??
+		if (p->pid == running->ppid && p->status == SLEEPING && p->event == running->pid) {
 			Lprintf(" K: -------------------------------------\n");
 			Lprintf(" K: proc %ld: PARENT AWAKEN AND READY!\n", p->pid);
 			Lprintf(" K: -------------------------------------\n");
 
 			p->status = READY;
-
-			// delete later??
-			p->priority = READY;
-
+			p->priority = 1;
 			enqueue(&readyQueue, p);
 			break;
 		}
@@ -259,21 +270,12 @@ kexit(int exit_code)
 		}
 	}
 
-	// Wake up P1 if the exiting process has children
-    	for (p = proc; p < &proc[NPROC]; p++) {
-        	if (p->ppid == running->pid) {
-            		kwakeup(1);
-			printList("     readyQueue", readyQueue);
-            		break;
-        	}
-    	}
-
     	// Add the terminated process back to the freeList
-	running->status = FREE;
-    	running->priority = FREE;
+	/*running->status = FREE;
+    	running->priority = 0;
     	enqueue(&freeList, running);
 
-	printList("     freeList", freeList);
+	printList("     freeList", freeList);*/
 	Lprintf(" K: Switching task via tswitch() ..\n");
 
   	// Call the task switcher to select the next process to run
@@ -309,27 +311,19 @@ int
 ksleep(int event)
 {
     // delete later??
-    if (event == 0) {
+    /*if (event == 0) {
         Lprintf("Invalid event number: 0. Sleep request ignored.\n");
         return -1;
-    }
+    }*/
 
-    // delete later??
     if (running->pid == 1) {
         Lprintf("P1 cannot be put to sleep indefinitely.\n");
         return -1;
     }
 
-    /*if (readyQueue == NULL && running->pid == 1) {
-        Lprintf("Cannot execute sleep() syscall: No other processes in the ready queue.\n");
-        return -1;
-    }*/
-
     running->event = event;
     running->status = SLEEPING;
-
-    // delete later??
-    running->priority = SLEEPING;
+    running->priority = 0;
 
     Lprintf(" K: -------------------------------------\n");
     Lprintf(" K: proc %ld: SLEEP!\n", running->pid);
@@ -345,32 +339,30 @@ int
 kwakeup(int event)
 {
     // delete later??
-    if (event == 0) {
+    /*if (event == 0) {
         Lprintf("Invalid event number: 0. Wakeup request ignored.\n");
         return -1;
-    }
+    }*/
 
     PROC *p, *prev;
     p = sleepList;
     prev = NULL;
 
     while (p) {
-	// delete the second condition later??
         if (p->event == event || p->pid == event) {
             if (prev == NULL) {
                 sleepList = p->next;
             } else {
                 prev->next = p->next;
             }
+
 	    Lprintf(" K: -------------------------------------\n");
 	    Lprintf(" K: proc %ld: AWAKE AND READY!\n", p->pid);
 	    Lprintf(" K: -------------------------------------\n");
 
             p->status = READY;
-
 	    // delete later??
-	    p->priority = READY;
-
+	    p->priority = 1;
             enqueue(&readyQueue, p);
             printList("     readyQueue", readyQueue);
             p = p->next;
@@ -389,12 +381,6 @@ kwait(int *status)
 {
     PROC *p;
 
-    if (readyQueue == NULL && running->pid == 1) {
-        Lprintf("Cannot execute wait() syscall: No other processes in the ready queue.\n");
-        return -1;
-    }
-
-    // delete later??
     if (running->pid == 1) {
         Lprintf("P1 cannot be put to sleep indefinitely.\n");
         return -1;
@@ -403,13 +389,14 @@ kwait(int *status)
     while (1) {
         for (p = proc; p < &proc[NPROC]; p++) {
             if (p->ppid == running->pid && p->status == ZOMBIE) {
+		*status = p->exit_code;
+
 		Lprintf(" K: -------------------------------------\n");
 		Lprintf(" K: proc %ld: FREE!\n", p->pid);
 		Lprintf(" K: -------------------------------------\n");
 
-                *status = p->exit_code;
                 p->status = FREE;
-                p->priority = FREE;
+                p->priority = 0;
                 enqueue(&freeList, p);
                 printList("     freeList", freeList);
                 return p->pid;
@@ -420,11 +407,9 @@ kwait(int *status)
 	Lprintf(" K: proc %ld: SLEEP!\n", running->pid);
 	Lprintf(" K: -------------------------------------\n");
 
+	// If no zombie child found, put the parent process to sleep
 	running->status = SLEEPING;
-
-	// delete later??
-	running->priority = SLEEPING;
-
+	running->priority = 0;
         enqueue(&sleepList, running);
         printList("     sleepList", sleepList);
         tswitch();
@@ -436,10 +421,11 @@ int
 do_exec(void *progaddr)
 {
   Lprintf(" K: exec for proc %ld\n", running->pid);
-  if (running->pid == 1){   /* Do not allow exec from P1, avoid system crash */
+  if (running->pid == 1) {   /* Do not allow exec from P1, avoid system crash */
     Lprintf(" K: P1 does not allow exec!\n");
     return -1;
   }
+
   return kexec(progaddr);          /* Should not return */
   /* Should not be here */
 }
@@ -451,9 +437,7 @@ do_switch(void)
 {
   int ret;
 
-  Lprintf(
-    " K: proc %ld switching out voluntarily, calling tswitch() ..\n",
-    running->pid);
+  Lprintf(" K: proc %ld switching out voluntarily, calling tswitch() ..\n", running->pid);
 
   ret = tswitch();      /* Context save-restore done in assembly code */
 
@@ -466,7 +450,7 @@ do_switch(void)
   */
 
   Lprintf(" K: proc %ld resuming, tswitch() has returned ..\n",
-    running->pid, running->pid);
+  running->pid, running->pid);
 
   return ret;
 }
@@ -528,9 +512,8 @@ do_exit(int exit_code)
 int
 do_getpid(void)
 {
-  /* Add YOUR CODE here - one line can be enough! (Assignment 5A) */
-	/* Return the PID of the currently running process */
-	return running->pid;
+  /* Return the PID of the currently running process */
+  return running->pid;
 }
 
 /* system call sleep() */
@@ -588,7 +571,8 @@ do_wakeup(int event)
 {
 
   char str[100];
-  Lprintf("Enter event number: ");
+
+  Lprintf("Enter event number or PID: ");
   Lgets(str, sizeof(str));
 
   // Remove trailing newline character
@@ -635,7 +619,7 @@ do_wakeup(int event)
 int
 do_wait(int *status)
 {
-	return kwait(status);
+  return kwait(status);
 }
 
 /********************************************************************
@@ -655,16 +639,14 @@ queinit(void)
     p->pid = i;
     p->status = FREE;
     p->priority = 0;
-    p->next = p+1;      /* I.e. (PROC *) &proc[i+1] (beauty of C pointers) */
+    p->next = p + 1;      /* I.e. (PROC *) &proc[i+1] (beauty of C pointers) */
   }
-  proc[NPROC-1].next = (PROC *) 0;  /* Terminating null ptr */
+  proc[NPROC - 1].next = (PROC *) 0;  /* Terminating null ptr */
 
-  /* Set heads for the two queues (linked lists), freeList and readyQueue */
+  /* Set heads for the three queues (linked lists), freeList, readyQueue, and sleepList */
   freeList = &proc[0];          /* Put all PROCs in freeList, with head = P0 */
   readyQueue = (PROC *) 0;      /* The readyQueue is empty */
-
-	/* Set head for the sleep queue */
-	sleepList = (PROC *) 0;
+  sleepList = (PROC *) 0;       /* Set head for the sleep queue */
 
   /* Create P0 as the initial running process */
   p = dequeue(&freeList);       /* This p is P0 */
@@ -744,12 +726,9 @@ scheduler(void)
 
   /* Dequeue incoming PROC */
   running = dequeue(&readyQueue);   /* SCHEDULER ACTION! */
-  Lprintf(
-      "      next running (incoming) dequeued from readyQueue: [%ld %ld]\n",
-        running->pid, running->priority);
+  Lprintf("      next running (incoming) dequeued from readyQueue: [%ld %ld]\n", running->pid, running->priority);
   printList("     readyQueue", readyQueue);
-  Lprintf(" K: Leaving scheduler() with new running -> [%ld %ld]\n",
-    running->pid, running->priority);
+  Lprintf(" K: Leaving scheduler() with new running -> [%ld %ld]\n", running->pid, running->priority);
 
   return running->pid;
 }
@@ -758,14 +737,12 @@ scheduler(void)
 void
 printTaskQueues(void)
 {
-    /* Add YOUR CODE here!  Match with output of kernel.prebuilt */
-
-    /* Programming Assignment 5A */
-	Lprintf("     --- printing current task and queues ---\n");
-	Lprintf("     Now running -> [%ld %ld] (PID %ld, Priority %ld, PPID %ld)\n", do_getpid(), running->priority, do_getpid(), running->priority, running->ppid);
-	printList("     readyQueue", readyQueue);
-	printList("     freeList", freeList);
-	printList("     sleepList", sleepList);
+  /* Programming Assignment 5A */
+  Lprintf("     --- printing current task and queues ---\n");
+  Lprintf("     Now running -> [%ld %ld] (PID %ld, Priority %ld, PPID %ld)\n", do_getpid(), running->priority, do_getpid(), running->priority, running->ppid);
+  printList("     readyQueue", readyQueue);
+  printList("     freeList", freeList);
+  printList("     sleepList", sleepList);
 
 }
 
