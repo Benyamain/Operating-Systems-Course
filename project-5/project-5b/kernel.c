@@ -400,6 +400,7 @@ kwait(int *status)
         enqueue(&sleepList, running);
         printList("     sleepList", sleepList);
         tswitch();
+	return -2;  // Return a special value to indicate that the process was put to sleep
     }
 }
 
@@ -606,7 +607,13 @@ do_wakeup(int event)
 int
 do_wait(int *status)
 {
-  return kwait(status);
+  int ret = kwait(status);
+
+  if (ret == -2) {
+      return ret;
+  }
+
+  return ret;
 }
 
 /********************************************************************
