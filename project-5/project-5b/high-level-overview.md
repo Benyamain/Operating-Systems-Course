@@ -1,49 +1,86 @@
-graph TD
-    A[MT System Initialization] --> B[Create Initial Process P0]
-    B --> C[Fork Process P1 from P0]
-    C --> D[Task Switch to P1]
-    D --> E[User Program Execution]
-    E --> F{User Input}
-    F --> |'f' - Fork| G[kfork System Call]
-    F --> |'a'/'b' - Exec| H[kexec System Call]
-    F --> |'s' - Switch| I[do_switch System Call]
-    F --> |'q' - Exit| J[do_exit System Call]
-    F --> |'z' - Sleep| K[do_sleep System Call]
-    F --> |'w' - Wakeup| L[do_wakeup System Call]
-    F --> |'t' - Wait| M[do_wait System Call]
-    F --> |'v' - View| N[printTaskQueues Function]
-    G --> O[savectxfork Assembly Routine]
-    O --> P[kfork C Function]
-    P --> Q{Free Process Available?}
-    Q --> |Yes| R[Initialize Child Process]
-    R --> S[Copy Parent's Stack and Context]
-    S --> T[Fix Child's Context]
-    T --> U[Enqueue Child to readyQueue]
-    Q --> |No| V[Error: No Free Process]
-    H --> W[Re-initialize Current Process Context]
-    W --> X[Transfer Control to New Program]
-    I --> Y[tswitch Assembly Routine]
-    Y --> Z[scheduler C Function]
-    Z --> AA[Enqueue Running Process to readyQueue]
-    AA --> AB[Dequeue Next Process from readyQueue]
-    J --> AC[kexit C Function]
-    AC --> AD[Set Process Status to ZOMBIE]
-    AD --> AE[Wake Up Parent Process]
-    AE --> AF[Handle Orphaned Processes]
-    K --> AG[ksleep C Function]
-    AG --> AH[Set Process Status to SLEEPING]
-    AH --> AI[Enqueue Process to sleepList]
-    L --> AJ[kwakeup C Function]
-    AJ --> AK[Wake Up Processes Waiting for Event]
-    AK --> AL[Move Processes to readyQueue]
-    M --> AM[kwait C Function]
-    AM --> AN{Child Process Exited?}
-    AN --> |Yes| AO[Retrieve Exit Status]
-    AO --> AP[Free Child Process]
-    AN --> |No| AQ[Put Parent Process to Sleep]
-    N --> AR[Print Running Process Info]
-    AR --> AS[Print readyQueue]
-    AS --> AT[Print freeList]
+MT System Initialization
+|
++-- Create Initial Process P0
++-- Fork Process P1 from P0
++-- Task Switch to P1
++-- User Program Execution
+    +-- User Input
+        +-- 'f' - Fork
+        |   +-- kfork System Call
+        |       +-- savectxfork Assembly Routine
+        |       |   +-- Save current process context
+        |       |   +-- Call kfork C Function
+        |       +-- kfork C Function
+        |           +-- Check for free process slot in freeList
+        |           +-- Free Process Available?
+        |           |   +-- Yes
+        |           |   |   +-- Initialize Child Process
+        |           |   |   +-- Copy Parent's Stack and Context
+        |           |   |   +-- Fix Child's Context
+        |           |   |   +-- Enqueue Child to readyQueue
+        |           |   +-- No
+        |           |       +-- Error: No Free Process
+        |           +-- Error: No Free Process
+        +-- 'a'/'b' - Exec
+        |   +-- kexec System Call
+        |       +-- Re-initialize Current Process Context
+        |       +-- Transfer Control to New Program
+        +-- 's' - Switch
+        |   +-- do_switch System Call
+        |       +-- tswitch Assembly Routine
+        |       |   +-- Save current process context
+        |       |   +-- Call scheduler C Function
+        |       +-- scheduler C Function
+        |       |   +-- Enqueue Running Process to readyQueue
+        |       |   +-- Dequeue Next Process from readyQueue
+        |       +-- Enqueue Running Process to readyQueue
+        |       +-- Dequeue Next Process from readyQueue
+        +-- 'q' - Exit
+        |   +-- do_exit System Call
+        |       +-- kexit C Function
+        |           +-- Set Process Status to ZOMBIE
+        |           +-- Add Process to zombieList
+        |           +-- Wake Up Parent Process
+        |           |   +-- Remove Parent from sleepList
+        |           +-- Handle Orphaned Processes
+        +-- 'z' - Sleep
+        |   +-- do_sleep System Call
+        |       +-- ksleep C Function
+        |           +-- Set Process Status to SLEEPING
+        |           +-- Enqueue Process to sleepList
+        +-- 'w' - Wakeup
+        |   +-- do_wakeup System Call
+        |       +-- kwakeup C Function
+        |           +-- Wake Up Processes Waiting for Event
+        |           +-- Remove Processes from sleepList
+        |           +-- Move Processes to readyQueue
+        +-- ^tb^ - Wait
+        |   +-- do_wait System Call
+        |       +-- kwait C Function
+        |           +-- Check for Zombie Child Processes
+        |           +-- Child Process Exited?
+        |           |   +-- Yes
+        |           |   |   +-- Retrieve Exit Status
+        |           |   |   +-- Remove Child from zombieList
+        |           |   |   +-- Add Child PCB to freeList
+        |           |   +-- No
+        |           |       +-- Is Parent Process P1?
+        |           |       |   +-- Yes
+        |           |       |   |   +-- Check for Zombie Child Processes
+        |           |       |   |   |   +-- Found
+        |           |       |   |   |   |   +-- Retrieve Exit Status
+        |           |       |   |   |   +-- Not Found
+        |           |       |   |   |       +-- Continue P1 Execution
+        |           |       |   +-- No
+        |           |       |       +-- Put Parent Process to Sleep
+        |           +-- Put Parent Process to Sleep
+        +-- 'v' - View
+            +-- printTaskQueues Function
+                +-- Print Running Process Info
+                +-- Print readyQueue
+                +-- Print freeList
+                +-- Print sleepList
+                +-- Print zombieList
 
 
 
