@@ -35,6 +35,7 @@ PROC *running;      /* Ptr to PCB of current running process (at most one) */
 PROC *freeList;     /* Ptr to head of the queue (linked list) of free PIDs */
 PROC *readyQueue;   /* Ptr to head of the queue of ready to run processes */
 PROC *sleepList; 	/* Ptr to head of the queue of sleeping processes */
+PROC *zombieList;   /* Ptr to head of the queue of zombie processes */
 extern int MAX_REACHED;	/* from uprogB() */
 
 /* File queue.c defines the scheduler's queue-management routines:
@@ -243,7 +244,7 @@ kexit(int exit_code)
 {
 	PROC *p;
 	running->exit_code = exit_code;
-	running->status = ZOMBIE;
+	/*running->status = ZOMBIE;*/
 
 	Lprintf(" K: -------------------------------------\n");
 	Lprintf(" K: proc %ld: TERMINATED AND FREE!\n", running->pid);
@@ -271,11 +272,18 @@ kexit(int exit_code)
 	}
 
     	// Add the terminated process back to the freeList
-	running->status = FREE;
+	/*running->status = FREE;
     	running->priority = 0;
-    	enqueue(&freeList, running);
+    	enqueue(&freeList, running);*/
 
-	printList("     freeList", freeList);
+	// Add the terminated process to the zombieList
+    	running->status = ZOMBIE;
+    	running->priority = 0;
+    	enqueue(&zombieList, running);
+
+	printList("     zombieList", zombieList);
+	/*printList("     freeList", freeList);*/
+
 	Lprintf(" K: Switching task via tswitch() ..\n");
 
   	// Call the task switcher to select the next process to run
@@ -374,6 +382,49 @@ kwait(int *status)
     }
 
     while (1) {
+        for (p = zombieList; p != NULL; p = p->next) {
+            if (p->ppid == running->pid) {
+                *status = p->exit_code;
+
+                Lprintf(" K: -------------------------------------\n");
+                Lprintf(" K: proc %ld: FREE!\n", p->pid);
+                Lprintf(" K: -------------------------------------\n");
+
+                // Remove the process from the zombieList
+                if (p == zombieList) {
+                    zombieList = p->next;
+                } else {
+                    PROC *prev = zombieList;
+
+                    while (prev->next != p) {
+                        prev = prev->next;
+                    }
+
+                    prev->next = p->next;
+                }
+
+                p->status = FREE;
+                p->priority = 0;
+                enqueue(&freeList, p);
+                printList("     freeList", freeList);
+                return p->pid;
+            }
+        }
+
+        Lprintf(" K: -------------------------------------\n");
+        Lprintf(" K: proc %ld: SLEEP!\n", running->pid);
+        Lprintf(" K: -------------------------------------\n");
+
+        // If no zombie child found, put the parent process to sleep
+        running->status = SLEEPING;
+        running->priority = 0;
+        enqueue(&sleepList, running);
+        printList("     sleepList", sleepList);
+        tswitch();
+        return -2;  // Return a special value to indicate that the process was put to sleep
+    }
+
+    /*while (1) {
         for (p = proc; p < &proc[NPROC]; p++) {
             if (p->ppid == running->pid && p->status == ZOMBIE) {
 		*status = p->exit_code;
@@ -401,7 +452,7 @@ kwait(int *status)
         printList("     sleepList", sleepList);
         tswitch();
 	return -2;  // Return a special value to indicate that the process was put to sleep
-    }
+    }*/
 }
 
 /* system call exec() */
@@ -641,6 +692,7 @@ queinit(void)
   freeList = &proc[0];          /* Put all PROCs in freeList, with head = P0 */
   readyQueue = (PROC *) 0;      /* The readyQueue is empty */
   sleepList = (PROC *) 0;       /* Set head for the sleep queue */
+  zombieList = (PROC *) 0;       /* Set head for the zombie queue */
 
   /* Create P0 as the initial running process */
   p = dequeue(&freeList);       /* This p is P0 */
@@ -674,6 +726,8 @@ Lmain(int argc, char *bootparms[])
   printList("     readyQueue", readyQueue);
   printList("     freeList", freeList);
   printList("     sleepList", sleepList);
+  printList("     zombieList", zombieList);
+
   Lprintf(" Continue startup: kfork a real user process into readyQueue ..\n");
   /* Standardized kfork() doesn't initialize the child (just clones
      from the parent), so if the newly forked P1 from P0 is to be
@@ -689,6 +743,7 @@ Lmain(int argc, char *bootparms[])
   printList("     readyQueue", readyQueue);
   printList("     freeList", freeList);
   printList("     sleepList", sleepList);
+  printList("     zombieList", zombieList);
 
   /* P0 will now go out and will never be seen again! */
   Lprintf(" P0 now being task-switched out via tswitch(), P1 coming in ..\n");
@@ -737,6 +792,7 @@ printTaskQueues(void)
   printList("     readyQueue", readyQueue);
   printList("     freeList", freeList);
   printList("     sleepList", sleepList);
+  printList("     zombieList", zombieList);
 
 }
 
