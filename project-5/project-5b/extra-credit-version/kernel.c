@@ -239,12 +239,12 @@ kexec(void *progaddr)
   kernel routine kexit() (no zombie)
 *******************************************/
 /* Sets the exit code, changes the process status to ZOMBIE, wakes up the parent if it's waiting, handles orphaned processes by making P1 their parent, and wakes up P1 if the exiting process has children. */
-int
+/*int
 kexit(int exit_code)
 {
 	PROC *p;
 	running->exit_code = exit_code;
-	/*running->status = ZOMBIE;*/
+	//running->status = ZOMBIE;
 
 	Lprintf(" K: -------------------------------------\n");
 	Lprintf(" K: proc %ld: TERMINATED AND FREE!\n", running->pid);
@@ -272,9 +272,9 @@ kexit(int exit_code)
 	}
 
     	// Add the terminated process back to the freeList
-	/*running->status = FREE;
-    	running->priority = 0;
-    	enqueue(&freeList, running);*/
+	//running->status = FREE;
+    	//running->priority = 0;
+    	//enqueue(&freeList, running);
 
 	// Add the terminated process to the zombieList
     	running->status = ZOMBIE;
@@ -282,12 +282,50 @@ kexit(int exit_code)
     	enqueue(&zombieList, running);
 
 	printList("     zombieList", zombieList);
-	/*printList("     freeList", freeList);*/
+	//printList("     freeList", freeList);
 
 	Lprintf(" K: Switching task via tswitch() ..\n");
 
   	// Call the task switcher to select the next process to run
 	return tswitch();
+}*/
+
+int
+kexit(int exit_code)
+{
+    PROC *p;
+    running->exit_code = exit_code;
+    running->status = ZOMBIE;
+
+    Lprintf(" K: -------------------------------------\n");
+    Lprintf(" K: proc %ld: TERMINATED AND ZOMBIE!\n", running->pid);
+    Lprintf(" K: -------------------------------------\n");
+
+    // Wake up parent if it's waiting for any child to exit
+    for (p = proc; p < &proc[NPROC]; p++) {
+        if (p->pid == running->ppid && p->status == SLEEPING && p->event == 0) {
+            Lprintf(" K: -------------------------------------\n");
+            Lprintf(" K: proc %ld: PARENT AWAKEN AND READY!\n", p->pid);
+            Lprintf(" K: -------------------------------------\n");
+
+            p->status = READY;
+            p->priority = 1;
+            enqueue(&readyQueue, p);
+            break;
+        }
+    }
+
+    // Make sure P1 becomes the parent of orphaned process
+    for (p = proc; p < &proc[NPROC]; p++) {
+        if (p->ppid == running->pid) {
+            p->ppid = 1;
+        }
+    }
+
+    Lprintf(" K: Switching task via tswitch() ..\n");
+
+    // Call the task switcher to select the next process to run
+    return tswitch();
 }
 
 /* system call fork() */
@@ -371,7 +409,7 @@ kwakeup(int event)
 }
 
 /* Waits for a child process to exit and retrieves its exit status, frees the child process, and returns the child's PID. */
-int
+/*int
 kwait(int *status)
 {
     PROC *p;
@@ -424,7 +462,7 @@ kwait(int *status)
         return -2;  // Return a special value to indicate that the process was put to sleep
     }
 
-    /*while (1) {
+    while (1) {
         for (p = proc; p < &proc[NPROC]; p++) {
             if (p->ppid == running->pid && p->status == ZOMBIE) {
 		*status = p->exit_code;
@@ -452,7 +490,50 @@ kwait(int *status)
         printList("     sleepList", sleepList);
         tswitch();
 	return -2;  // Return a special value to indicate that the process was put to sleep
-    }*/
+    }
+}*/
+
+int
+kwait(int *status)
+{
+    PROC *p;
+
+    if (running->pid == 1) {
+        Lprintf("P1 cannot be put to sleep indefinitely.\n");
+        return -1;
+    }
+
+    while (1) {
+        for (p = proc; p < &proc[NPROC]; p++) {
+            if (p->ppid == running->pid && p->status == ZOMBIE) {
+                *status = p->exit_code;
+
+                Lprintf(" K: -------------------------------------\n");
+                Lprintf(" K: proc %ld: FREE!\n", p->pid);
+                Lprintf(" K: -------------------------------------\n");
+
+                p->status = FREE;
+                p->priority = 0;
+                enqueue(&freeList, p);
+                printList("     freeList", freeList);
+                return p->pid;
+            }
+        }
+
+        Lprintf(" K: -------------------------------------\n");
+        Lprintf(" K: proc %ld: SLEEP!\n", running->pid);
+        Lprintf(" K: -------------------------------------\n");
+
+        // If no zombie child found, put the parent process to sleep
+        running->status = SLEEPING;
+	// Use event value to indicate waiting for child
+	running->event = 0;
+        running->priority = 0;
+        enqueue(&sleepList, running);
+        printList("     sleepList", sleepList);
+        tswitch();
+        return -2;  // Return a special value to indicate that the process was put to sleep
+    }
 }
 
 /* system call exec() */
