@@ -32,9 +32,6 @@ enqueue(PROC **queue, PROC *p)
 	prev->next = p;
 
 	return 0;
-
-    /* Add YOUR CODE here */
-
 }
 
 /* Dequeueing routine for the scheduler */
@@ -42,8 +39,6 @@ PROC
 *dequeue(PROC **queue)
 {
     /* Remove and return first PROC from queue */
-
-    /* Add YOUR CODE here */
 
 	PROC *p;
 
@@ -73,8 +68,5 @@ printList(char *name, PROC *p)
 	Lprintf("NULL\n");
 
 	return 0;
-
-    /* Add YOUR CODE here */
-
 }
 
